@@ -49,3 +49,25 @@ flowchart TD
 
     TransactionWatcher --> | emit token | Database
 ```
+
+## Database
+
+```mermaid
+erDiagram
+    DEVICES {
+        int id PK
+        string device_token
+        string user_adm_address
+        datetime created_at
+        datetime updated_at
+    }
+```
+
+## Stack
+
+- TypeScript with ESM configuration (`type: "module"`)
+- `prisma`: Postgres as a database
+- `adamant-api`, for interacting with blockchain
+- `firebase-admin` for sending Push Notifications via FCM
+- `pino` for logging
+- `json5` for configuration files
