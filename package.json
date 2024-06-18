@@ -1,0 +1,17 @@
+{
+  "name": "adamant-ns",
+  "version": "0.0.1",
+  "description": "ADAMANT Notification Service",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "ADAMANT Foundation <devs@adamant.im>",
+  "license": "GPL-3.0",
+  "keywords": [
+    "adamant",
+    "notification",
+    "service",
+    "blockchain"
+  ]
+}
