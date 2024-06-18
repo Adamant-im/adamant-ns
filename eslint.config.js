@@ -11,8 +11,8 @@ export default tseslint.config({
   languageOptions: {
     parser: tseslint.parser,
     parserOptions: {
-      project: true
-      // sourceType: 'module'
+      project: true,
+      sourceType: 'module'
     }
   },
   extends: [eslint.configs.recommended, ...tseslint.configs.recommended],
