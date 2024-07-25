@@ -1,0 +1,70 @@
+{
+  /**
+    PostgreSQL database url
+    used to store tokens and fetched transactions
+  **/
+  "database": {
+    "url": "postgresql://postgres:postgres@localhost:5432/adamant_ns?schema=public"
+  },
+
+  "app": {
+    /**
+      Server port with health check endpoint
+    **/
+    "port": 3000
+  },
+
+  /**
+    The maximum number of hours after a transaction occurs during which a notification can be sent to the user.
+    If a transaction is older than the specified number of hours, the system will skip sending a notification for that transaction
+  **/
+  "notificationExpiryHours": 24,
+
+  /**
+    List of nodes to fetch transactions.
+    If one becomes unavailable, the bot will choose a live one.
+  **/
+  "admNodes": [
+    "https://bid.adamant.im",
+    "http://localhost:36666",
+    "https://endless.adamant.im",
+    "https://clown.adamant.im",
+    "https://unusual.adamant.im",
+    "https://debate.adamant.im",
+    "http://23.226.231.225:36666",
+    "http://78.47.205.206:36666",
+    "https://lake.adamant.im",
+    "https://sunshine.adamant.im"
+  ],
+
+  /**
+  Pass phrase for the incoming transaction's bot
+  **/
+  "passPhrase": "pig update shiver various bus van tourist sister plastic card reform satisfy",
+
+  /**
+  Transaction types to notify
+  0 - token transfer transaction
+  2 - delegate registration transaction
+  3 - vote for delegate transaction
+  8 - chat/message transaction
+  9 - store data in KVS transaction
+  **/
+  "notifyTxTypes": [0, 8],
+
+  /**
+  If service notifies "8" type of transactions (chat/message transaction)
+  include subtypes to notify of these transactions
+  1 - Basic encrypted messages
+  2 - Rich content messages
+  3 - Signal messages
+  **/
+  "chatTxTypeIncludeSubtype": [1, 2],
+
+  /**
+  Notification service to use
+  APNS, FCM
+  **/
+
+  "notificationService": "FCM"
+}

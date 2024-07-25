@@ -5,8 +5,8 @@
   "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "start": "tsup",
-    "dev": "tsup --watch",
+    "start": "tsup --onSuccess 'node dist/index.js'",
+    "dev": "tsup --watch --onSuccess 'node dist/index.js'",
     "build": "tsup --dts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -32,6 +32,7 @@
     "@tsconfig/strictest": "^2.0.5",
     "@types/eslint__js": "^8.42.3",
     "@types/node": "20.12.7",
+    "@types/node-cron": "^3.0.11",
     "eslint": "^8.57.0",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.7",
@@ -45,5 +46,17 @@
       "eslint --fix",
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "@prisma/client": "^5.16.0",
+    "@types/bignumber.js": "^5.0.0",
+    "adamant-api": "^2.4.0",
+    "adamant-module-logger": "github:Adamant-im/adamant-module-logger",
+    "bignumber.js": "^9.1.2",
+    "fastify": "^4.28.0",
+    "firebase-admin": "^12.2.0",
+    "json5": "^2.2.3",
+    "node-cron": "^3.0.3",
+    "prisma": "^5.16.0"
   }
 }

@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PushServiceProvider {
+  FCM
+  APNS
+}
+
+model Device {
+  id                  Int      @id @default(autoincrement())
+  createdAt           DateTime @default(now())
+  admAddress          String   @db.VarChar(20)
+  pushToken           String   @unique
+  pushServiceProvider PushServiceProvider
+
+  notifyTransactions  NotifyTransaction[]
+
+  @@index([admAddress])
+}
+
+model NotifyTransaction {
+  id                  Int      @id @default(autoincrement())
+  createdAt           DateTime @default(now())
+  admTxId             String   @db.VarChar(20)
+  admTxDate           DateTime
+  isNotified          Boolean  @default(false)
+  lastNotifyDate      DateTime?
+
+  deviceId            Int
+  device              Device   @relation(fields: [deviceId], references: [id])
+}
+
+enum JobName {
+  TRANSACTIONS
+}
+
+model CronJobStatus {
+  id                  Int      @id @default(autoincrement())
+  jobName             JobName  @unique
+  state               Json
+}

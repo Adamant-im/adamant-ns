@@ -4,6 +4,5 @@ export default defineConfig({
   entry: ['src/**/*.ts'],
   sourcemap: true,
   clean: true,
-  format: ['esm'],
-  onSuccess: 'node dist/index.js'
+  format: ['esm']
 })
