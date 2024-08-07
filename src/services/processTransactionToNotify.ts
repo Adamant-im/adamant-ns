@@ -1,12 +1,12 @@
 import { AnyTransaction, decodeMessage } from 'adamant-api'
 import { config } from '../config.js'
 import { PrismaClient } from '@prisma/client'
-import { BaseNotification } from '../adapters/notification/baseNotification.js'
+import { BaseNotificationInterface } from '../adapters/notification/baseNotification.js'
 import { BigNumber } from 'bignumber.js'
 
 export const processTransactionToNotify = async (
   prisma: PrismaClient,
-  notificationService: BaseNotification,
+  notificationService: BaseNotificationInterface,
   tx: AnyTransaction
 ) => {
   const devices = await prisma.device.findMany({
