@@ -1,8 +1,8 @@
 import { AdamantApi } from 'adamant-api'
-import { config } from '../config.js'
+import { index } from '../config/index.js'
 
 export const createAdamantClient = () => {
   return new AdamantApi({
-    nodes: config.nodes
+    nodes: index.nodes
   })
 }

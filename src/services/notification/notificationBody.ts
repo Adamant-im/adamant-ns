@@ -1,5 +1,5 @@
 import { AnyTransaction, decodeMessage } from 'adamant-api'
-import { config } from '../../config.js'
+import { index } from '../../config/index.js'
 import { BigNumber } from 'bignumber.js'
 
 export const createNotificationBody = (tx: AnyTransaction) => {
@@ -12,7 +12,7 @@ export const createNotificationBody = (tx: AnyTransaction) => {
     const decryptedMessage = decodeMessage(
       tx.asset?.chat?.message,
       tx.senderPublicKey,
-      config.adamantAccount.passPhrase,
+      index.adamantAccount.passPhrase,
       tx.asset?.chat?.own_message
     ).trim()
 

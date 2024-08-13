@@ -40,7 +40,7 @@
   /**
   Pass phrase for the incoming transaction's bot
   **/
-  "passPhrase": "pig update shiver various bus van tourist sister plastic card reform satisfy",
+  "passPhrase": "",
 
   /**
   Transaction types to notify

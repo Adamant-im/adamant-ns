@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify'
-import { config } from '../config.js'
+import { index } from '../config/index.js'
 import { checkConnection } from '../modules/prisma.js'
 import { PrismaClient } from '@prisma/client'
 
@@ -10,7 +10,7 @@ export const createHealthCheckRoutes = (
   fastify.get('/', async function (_request, reply) {
     reply.send({
       timestamp: new Date().toISOString(),
-      version: config.app.version,
+      version: index.app.version,
       databaseConnection: await checkConnection(prisma)
     })
   })

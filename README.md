@@ -1,7 +1,7 @@
 # ADAMANT Notification Service (ANS)
 
 ## Configuration
-1. Fill `config5.json` file with configuration settings
+1. Fill `config5.json` file with configuration settings (`config.sample.json5` as an example)
 2. Create `firebase-credentials.json` file (`firebase-credentials-example.json` as an example)
 3. `pnpm install`
 4. `export DATABASE_URL=$database-url`

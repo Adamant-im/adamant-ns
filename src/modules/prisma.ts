@@ -1,11 +1,11 @@
 import { PrismaClient } from '@prisma/client'
-import { config } from '../config.js'
+import { index } from '../config/index.js'
 
 export const createPrismaClient = () => {
   return new PrismaClient({
     datasources: {
       db: {
-        url: config.database.url
+        url: index.database.url
       }
     }
   })

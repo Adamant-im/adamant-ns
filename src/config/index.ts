@@ -5,6 +5,8 @@ import {
   createAddressFromPublicKey,
   createKeypairFromPassphrase
 } from 'adamant-api'
+import { schema } from './schema.js'
+import { fromZodError } from '../utils/zod.js'
 
 const projectRoot = process.cwd()
 
@@ -34,7 +36,15 @@ const packageFile = JSON5.parse(
   fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8')
 ) as PackageFile
 
-export const config = {
+const result = schema.safeParse(configFile)
+
+if (!result.success) {
+  const message = fromZodError(result.error)
+
+  throw new Error(`Service's config is wrong:\n${message}Cannot start the bot.`)
+}
+
+export const index = {
   app: {
     name: 'adamant-ns',
     version: packageFile.version,
