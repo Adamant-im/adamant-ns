@@ -29,7 +29,7 @@ export const processTransactionToNotify = async (
 
   if (devices.length) {
     logger.info(
-      `Got transaction to notify devices, devices ids: ${devices.map((d) => d.id).join(', ')}, providers: ${devices.map((d) => d.pushServiceProvider).join(', ')} admTxId: ${tx.id}`
+      `Got transaction to notify devices, devices ids: ${devices.map((d) => d.id).join(', ')}, providers: ${devices.map((d) => d.pushServiceProvider).join(', ')}, admTxId: ${tx.id}`
     )
 
     await Promise.all(
@@ -73,8 +73,8 @@ export const processTransactionToNotify = async (
           }
 
           logger.error(
-            `Failed to send notification to device, deviceId: ${device.id}, provider: ${device.pushServiceProvider}, admTxId: ${tx.id}`,
-            e
+            e,
+            `Failed to send notification to device, deviceId: ${device.id}, provider: ${device.pushServiceProvider}, admTxId: ${tx.id}`
           )
 
           await prisma.notifyTransaction.update({

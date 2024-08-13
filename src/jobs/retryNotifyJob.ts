@@ -39,7 +39,7 @@ export const spawnRetryNotifyJob = (
         const notification = createNotificationBody(tx)
 
         logger.info(
-          `Got notification than failed to send, deviceId: ${transaction.device.id}, provider: ${transaction.device.pushServiceProvider}, admTxId: ${tx.id}`
+          `Got notification that failed to send, deviceId: ${transaction.device.id}, provider: ${transaction.device.pushServiceProvider}, admTxId: ${tx.id}`
         )
 
         try {
@@ -61,8 +61,8 @@ export const spawnRetryNotifyJob = (
           )
         } catch (e) {
           logger.error(
-            `Failed to send notification again by retry, deviceId: ${transaction.device.id}, provider: ${transaction.device.pushServiceProvider}, admTxId: ${tx.id}`,
-            e
+            e,
+            `Failed to send notification again by retry, deviceId: ${transaction.device.id}, provider: ${transaction.device.pushServiceProvider}, admTxId: ${tx.id}`
           )
           await prisma.notifyTransaction.update({
             where: { id: transaction.id },
