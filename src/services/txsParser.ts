@@ -5,13 +5,13 @@ import { processTransactionToNotify } from './processTransactionToNotify.js'
 import { config } from '../config.js'
 import { SignalMessagePayload } from '../types/models.js'
 import { PrismaClient } from '@prisma/client'
-import { BaseNotification } from '../adapters/notification/baseNotification.js'
+import { BaseNotificationInterface } from '../adapters/notification/baseNotification.js'
 
 const processedTxs: { [key: string]: AnyTransaction } = {} // cache for processed transactions
 
 export async function txsParser(
   prisma: PrismaClient,
-  notificationService: BaseNotification,
+  notificationService: BaseNotificationInterface,
   tx: AnyTransaction
 ) {
   if (processedTxs[tx.id]) {
@@ -54,6 +54,7 @@ export async function txsParser(
 
     isTxToNotify = true
   }
+
   if (isSignalTx) {
     await processSignalTransaction(prisma, tx as ChatMessageTransaction)
   } else if (isTxToNotify) {

@@ -1,5 +1,14 @@
 # ADAMANT Notification Service (ANS)
 
+## Configuration
+1. Fill `config5.json` file with configuration settings
+2. Create `firebase-credentials.json` file (`firebase-credentials-example.json` as an example)
+3. `pnpm install`
+4. `export DATABASE_URL=$database-url`
+5. `npx prisma migrate deploy`
+6. `pnpm run build`
+7. `pnpm run start`
+
 ## How it works
 
 To deliver notifcations privately and secure, 4 parties are involved:

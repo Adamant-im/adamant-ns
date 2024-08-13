@@ -11,18 +11,26 @@ export class FcmNotification implements BaseNotificationInterface {
     this.service = fcmClient
   }
 
-  message(pushToken: string, notification: { title: string; body: string }) {
-    this.service.messaging().send({ notification, token: pushToken })
+  message(
+    pushToken: string,
+    notification: { title: string; body: string },
+    data?: { [key: string]: string }
+  ) {
+    return this.service
+      .messaging()
+      .send({ notification, token: pushToken, ...(data ? { data } : {}) })
   }
 
   messageMany(
     pushTokens: string[],
-    notification: { title: string; body: string }
+    notification: { title: string; body: string },
+    data?: { [key: string]: string }
   ) {
     this.service.messaging().sendEach(
       pushTokens.map((pushToken) => ({
         notification,
-        token: pushToken
+        token: pushToken,
+        ...(data ? { data } : {})
       }))
     )
   }

@@ -27,8 +27,11 @@ model Device {
 model NotifyTransaction {
   id                  Int      @id @default(autoincrement())
   createdAt           DateTime @default(now())
+
   admTxId             String   @db.VarChar(20)
   admTxDate           DateTime
+  admTx               Json
+
   isNotified          Boolean  @default(false)
   lastNotifyDate      DateTime?
 

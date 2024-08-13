@@ -4,11 +4,11 @@ import { schedule } from 'node-cron'
 import { config } from '../config.js'
 import { JobName } from '@prisma/client'
 import { txsParser } from '../services/txsParser.js'
-import { BaseNotification } from '../adapters/notification/baseNotification.js'
+import { BaseNotificationInterface } from '../adapters/notification/baseNotification.js'
 
 export const spawnTransactionsJobs = (
   adamantClient: AdamantApi,
-  notificationService: BaseNotification,
+  notificationService: BaseNotificationInterface,
   prisma: PrismaClient
 ) => {
   let isLocked = false
@@ -56,7 +56,7 @@ export const spawnTransactionsJobs = (
     const txs = await adamantClient.getTransactions({
       fromHeight: lastCheckHeight,
       and: {
-        toHeight: lastCheckHeight + config.app.heightSkipPerHeight
+        toHeight: lastCheckHeight
       },
       returnAsset: 1
     })

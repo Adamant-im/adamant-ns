@@ -42,6 +42,7 @@ export const config = {
     projectRoot,
     notificationExpiryHours: configFile.notificationExpiryHours,
     txCheckInterval: '*/4 * * * * *', // in cron language
+    retryNotifyInterval: '*/4 * * * * *', // */10 * * * * in cron language
     heightSkipPerHeight: 1,
     notificationService: configFile.notificationService
   },

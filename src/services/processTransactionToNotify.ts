@@ -1,58 +1,72 @@
-import { AnyTransaction, decodeMessage } from 'adamant-api'
-import { config } from '../config.js'
+import { AnyTransaction } from 'adamant-api'
 import { PrismaClient } from '@prisma/client'
 import { BaseNotificationInterface } from '../adapters/notification/baseNotification.js'
-import { BigNumber } from 'bignumber.js'
+import { FirebaseError } from 'firebase-admin'
+import { createNotificationBody } from './notification/notificationBody.js'
 
 export const processTransactionToNotify = async (
   prisma: PrismaClient,
   notificationService: BaseNotificationInterface,
   tx: AnyTransaction
 ) => {
-  const devices = await prisma.device.findMany({
-    where: { admAddress: tx.senderId }
+  let devices = await prisma.device.findMany({
+    where: { admAddress: tx.recipientId }
   })
 
   if (!devices.length) {
     return
   }
 
-  const notification = {
-    title: '',
-    body: ''
-  }
+  const notification = createNotificationBody(tx)
 
-  if (tx.type === 8) {
-    const decryptedMessage = decodeMessage(
-      tx.asset?.chat?.message,
-      tx.senderPublicKey,
-      config.adamantAccount.passPhrase,
-      tx.asset?.chat?.own_message
-    ).trim()
-
-    notification.title = `Message from ${tx.senderId}`
-    notification.body =
-      decryptedMessage.length > 64
-        ? decryptedMessage.substring(0, 64) + '...'
-        : decryptedMessage
-  } else if (tx.type === 0) {
-    const amount = new BigNumber(tx.amount)
-      .dividedBy(new BigNumber(1e8))
-      .toString()
-    const fee = new BigNumber(tx.fee).dividedBy(new BigNumber(1e8)).toString()
-    notification.title = `Transfer from ${tx.senderId}`
-    notification.body = `Amount: ${amount}, fee: ${fee}`
-  }
-
-  const pushTokens = devices
-    .filter(
-      (device) =>
-        device.admAddress === tx.recipientId &&
-        device.pushServiceProvider === notificationService.provider
-    )
-    .map((device) => device.pushToken)
+  devices = devices.filter(
+    (device) =>
+      device.admAddress === tx.recipientId &&
+      device.pushServiceProvider === notificationService.provider
+  )
 
   if (devices.length) {
-    notificationService.messageMany(pushTokens, notification)
+    await Promise.all(
+      devices.map(async (device) => {
+        const notifyRecord = await prisma.notifyTransaction.create({
+          data: {
+            admTxId: tx.id,
+            admTxDate: new Date(tx.timestamp * 1000),
+            isNotified: false,
+            deviceId: device.id,
+            admTx: JSON.stringify(tx)
+          }
+        })
+
+        try {
+          await notificationService.message(device.pushToken, notification, {
+            'push-recipient': tx.recipientId,
+            'txn-id': tx.id
+          })
+
+          await prisma.notifyTransaction.delete({
+            where: { id: notifyRecord.id }
+          })
+        } catch (e) {
+          if ((e as FirebaseError).code === 'messaging/invalid-recipient') {
+            await prisma.notifyTransaction.delete({
+              where: { id: notifyRecord.id }
+            })
+            await prisma.device.delete({
+              where: { id: device.id }
+            })
+
+            return
+          }
+
+          await prisma.notifyTransaction.update({
+            where: { id: notifyRecord.id },
+            data: {
+              lastNotifyDate: new Date()
+            }
+          })
+        }
+      })
+    )
   }
 }

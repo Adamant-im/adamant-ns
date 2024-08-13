@@ -1,4 +1,4 @@
-import Fastify from 'fastify'
+import Fastify, { FastifyBaseLogger } from 'fastify'
 
 import { createPrismaClient } from './modules/prisma.js'
 import { createRoutes } from './routes/index.js'
@@ -8,15 +8,14 @@ import { config } from './config.js'
 import { createAdamantClient } from './modules/adamantClient.js'
 import { createFcmClient } from './modules/fcmClient.js'
 import { FcmNotification } from './adapters/notification/fcmNotification.js'
-import { BaseNotification } from './adapters/notification/baseNotification.js'
 
 export const main = async () => {
   const { logger } = createLogger()
-  const fastify = Fastify({ logger })
+  const fastify = Fastify({ logger: logger as FastifyBaseLogger })
   const prisma = createPrismaClient()
   const adamantClient = createAdamantClient()
 
-  let notificationService = new BaseNotification()
+  let notificationService
 
   if (config.app.notificationService === 'FCM') {
     const fcmClient = createFcmClient()
@@ -26,5 +25,7 @@ export const main = async () => {
   createRoutes(fastify, prisma)
   await fastify.listen({ port: config.app.port })
 
-  spawnJobs(adamantClient, notificationService, prisma)
+  if (notificationService) {
+    spawnJobs(adamantClient, notificationService, prisma)
+  }
 }

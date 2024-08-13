@@ -5,19 +5,21 @@ export interface BaseNotificationInterface {
 
   message(
     pushToken: string,
-    notification: { title: string; body: string }
-  ): void
+    notification: { title: string; body: string },
+    data?: { [key: string]: string }
+  ): Promise<string>
 
   messageMany(
     pushTokens: string[],
-    notification: { title: string; body: string }
+    notification: { title: string; body: string },
+    data?: { [key: string]: string }
   ): void
 }
 
 export class BaseNotification implements BaseNotificationInterface {
   provider: PushServiceProvider | undefined
 
-  message(): void {
+  message(): Promise<string> {
     throw new Error('Not implemented')
   }
 
