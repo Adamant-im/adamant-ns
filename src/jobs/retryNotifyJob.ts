@@ -4,12 +4,18 @@ import { schedule } from 'node-cron'
 import { config } from '../config.js'
 import { BaseNotificationInterface } from '../adapters/notification/baseNotification.js'
 import { createNotificationBody } from '../services/notification/notificationBody.js'
+import { Logger } from '../types/index.js'
 
 export const spawnRetryNotifyJob = (
   notificationService: BaseNotificationInterface,
-  prisma: PrismaClient
+  prisma: PrismaClient,
+  logger: Logger
 ) => {
   let isLocked = false
+
+  logger.info(
+    `Spawned transaction parser job with ${config.app.retryNotifyInterval} interval`
+  )
 
   schedule(config.app.retryNotifyInterval, async () => {
     if (isLocked) return
@@ -32,6 +38,10 @@ export const spawnRetryNotifyJob = (
 
         const notification = createNotificationBody(tx)
 
+        logger.info(
+          `Got notification than failed to send, deviceId: ${transaction.device.id}, provider: ${transaction.device.pushServiceProvider}, admTxId: ${tx.id}`
+        )
+
         try {
           await notificationService.message(
             transaction.device.pushToken,
@@ -45,7 +55,15 @@ export const spawnRetryNotifyJob = (
           await prisma.notifyTransaction.delete({
             where: { id: transaction.id }
           })
+
+          logger.info(
+            `Successfully sent notification that failed to send, deleting, deviceId: ${transaction.device.id}, provider: ${transaction.device.pushServiceProvider}, admTxId: ${tx.id}`
+          )
         } catch (e) {
+          logger.error(
+            `Failed to send notification again by retry, deviceId: ${transaction.device.id}, provider: ${transaction.device.pushServiceProvider}, admTxId: ${tx.id}`,
+            e
+          )
           await prisma.notifyTransaction.update({
             where: { id: transaction.id },
             data: {

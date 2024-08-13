@@ -3,11 +3,13 @@ import { PrismaClient } from '@prisma/client'
 import { BaseNotificationInterface } from '../adapters/notification/baseNotification.js'
 import { FirebaseError } from 'firebase-admin'
 import { createNotificationBody } from './notification/notificationBody.js'
+import { Logger } from '../types/index.js'
 
 export const processTransactionToNotify = async (
   prisma: PrismaClient,
   notificationService: BaseNotificationInterface,
-  tx: AnyTransaction
+  tx: AnyTransaction,
+  logger: Logger
 ) => {
   let devices = await prisma.device.findMany({
     where: { admAddress: tx.recipientId }
@@ -26,6 +28,10 @@ export const processTransactionToNotify = async (
   )
 
   if (devices.length) {
+    logger.info(
+      `Got transaction to notify devices, devices ids: ${devices.map((d) => d.id).join(', ')}, providers: ${devices.map((d) => d.pushServiceProvider).join(', ')} admTxId: ${tx.id}`
+    )
+
     await Promise.all(
       devices.map(async (device) => {
         const notifyRecord = await prisma.notifyTransaction.create({
@@ -47,8 +53,15 @@ export const processTransactionToNotify = async (
           await prisma.notifyTransaction.delete({
             where: { id: notifyRecord.id }
           })
+
+          logger.info(
+            `Sent notification to device, deviceId: ${device.id}, provider: ${device.pushServiceProvider}, admTxId: ${tx.id}`
+          )
         } catch (e) {
           if ((e as FirebaseError).code === 'messaging/invalid-recipient') {
+            logger.info(
+              `Failed to send notification to device (invalid push token), deleting device from DB, deviceId: ${device.id}, provider: ${device.pushServiceProvider}, admTxId: ${tx.id}`
+            )
             await prisma.notifyTransaction.delete({
               where: { id: notifyRecord.id }
             })
@@ -58,6 +71,11 @@ export const processTransactionToNotify = async (
 
             return
           }
+
+          logger.error(
+            `Failed to send notification to device, deviceId: ${device.id}, provider: ${device.pushServiceProvider}, admTxId: ${tx.id}`,
+            e
+          )
 
           await prisma.notifyTransaction.update({
             where: { id: notifyRecord.id },

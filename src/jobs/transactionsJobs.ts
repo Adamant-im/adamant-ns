@@ -5,11 +5,13 @@ import { config } from '../config.js'
 import { JobName } from '@prisma/client'
 import { txsParser } from '../services/txsParser.js'
 import { BaseNotificationInterface } from '../adapters/notification/baseNotification.js'
+import { Logger } from '../types/index.js'
 
 export const spawnTransactionsJobs = (
   adamantClient: AdamantApi,
   notificationService: BaseNotificationInterface,
-  prisma: PrismaClient
+  prisma: PrismaClient,
+  logger: Logger
 ) => {
   let isLocked = false
 
@@ -17,8 +19,17 @@ export const spawnTransactionsJobs = (
     wsType: 'ws',
     admAddress: config.adamantAccount.address
   })
-  adamantClient.socket?.on((tx) => txsParser(prisma, notificationService, tx))
+  logger.info(
+    `Adamant Client socket initialized on ${config.adamantAccount.address} address`
+  )
+  adamantClient.socket?.on((tx) =>
+    txsParser(prisma, notificationService, tx, logger)
+  )
+  adamantClient.socket?.catch((error) => logger.error(error))
 
+  logger.info(
+    `Spawned transaction parser job with ${config.app.txCheckInterval} interval`
+  )
   schedule(config.app.txCheckInterval, async () => {
     if (isLocked) return
 
@@ -67,7 +78,7 @@ export const spawnTransactionsJobs = (
     }
 
     txs.transactions.forEach((tx) => {
-      txsParser(prisma, notificationService, tx)
+      txsParser(prisma, notificationService, tx, logger)
     })
 
     await prisma.cronJobStatus.update({

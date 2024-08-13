@@ -3,10 +3,12 @@ import { decodeMessage } from 'adamant-api'
 import { config } from '../config.js'
 import { PushServiceProvider, SignalMessagePayload } from '../types/models.js'
 import { PrismaClient } from '@prisma/client'
+import { Logger } from '../types/index.js'
 
 export const processSignalTransaction = async (
   prisma: PrismaClient,
-  tx: ChatMessageTransaction
+  tx: ChatMessageTransaction,
+  logger: Logger
 ) => {
   const decryptedMessage = JSON.parse(
     decodeMessage(
@@ -27,12 +29,18 @@ export const processSignalTransaction = async (
   }
 
   if (decryptedMessage.action.toLowerCase() === 'add') {
+    logger.info(
+      `Adding new device to subscribe to notifications, admAddress: ${payload.admAddress}, pushServiceProvider: ${payload.pushServiceProvider}`
+    )
     await prisma.device.upsert({
       where: payload,
       update: {},
       create: payload
     })
   } else if (decryptedMessage.action.toLowerCase() === 'remove') {
+    logger.info(
+      `Removing device from notifications, admAddress: ${payload.admAddress}, pushServiceProvider: ${payload.pushServiceProvider}`
+    )
     await prisma.device.delete({
       where: payload
     })

@@ -26,6 +26,6 @@ export const main = async () => {
   await fastify.listen({ port: config.app.port })
 
   if (notificationService) {
-    spawnJobs(adamantClient, notificationService, prisma)
+    spawnJobs(adamantClient, notificationService, prisma, logger)
   }
 }
