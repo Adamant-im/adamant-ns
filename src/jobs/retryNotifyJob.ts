@@ -1,7 +1,7 @@
 import { AnyTransaction } from 'adamant-api'
 import { PrismaClient } from '@prisma/client'
 import { schedule } from 'node-cron'
-import { index } from '../config/index.js'
+import { config } from '../config/index.js'
 import { BaseNotificationInterface } from '../adapters/notification/baseNotification.js'
 import { createNotificationBody } from '../services/notification/notificationBody.js'
 import { Logger } from '../types/index.js'
@@ -14,10 +14,10 @@ export const spawnRetryNotifyJob = (
   let isLocked = false
 
   logger.info(
-    `Spawned retry notify parser job with ${index.app.retryNotifyInterval} interval`
+    `Spawned retry notify parser job with ${config.app.retryNotifyInterval} interval`
   )
 
-  schedule(index.app.retryNotifyInterval, async () => {
+  schedule(config.app.retryNotifyInterval, async () => {
     if (isLocked) return
 
     isLocked = true

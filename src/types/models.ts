@@ -1,7 +1,3 @@
-export enum JobName {
-  TRANSACTIONS = 'TRANSACTIONS'
-}
-
 export enum PushServiceProvider {
   FCM = 'FCM',
   APNS = 'APNS'

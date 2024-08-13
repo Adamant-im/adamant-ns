@@ -1,7 +1,7 @@
 import { AdamantApi } from 'adamant-api'
 import { PrismaClient } from '@prisma/client'
 import { schedule } from 'node-cron'
-import { index } from '../config/index.js'
+import { config } from '../config/index.js'
 import { JobName } from '@prisma/client'
 import { txsParser } from '../services/txsParser.js'
 import { BaseNotificationInterface } from '../adapters/notification/baseNotification.js'
@@ -17,10 +17,10 @@ export const spawnTransactionsJobs = (
 
   adamantClient.initSocket({
     wsType: 'ws',
-    admAddress: index.adamantAccount.address
+    admAddress: config.adamantAccount.address
   })
   logger.info(
-    `Adamant Client socket initialized on ${index.adamantAccount.address} address`
+    `Adamant Client socket initialized on ${config.adamantAccount.address} address`
   )
   adamantClient.socket?.on((tx) =>
     txsParser(prisma, notificationService, tx, logger)
@@ -28,9 +28,9 @@ export const spawnTransactionsJobs = (
   adamantClient.socket?.catch((error) => logger.error(error))
 
   logger.info(
-    `Spawned transaction parser job with ${index.app.txCheckInterval} interval`
+    `Spawned transaction parser job with ${config.app.txCheckInterval} interval`
   )
-  schedule(index.app.txCheckInterval, async () => {
+  schedule(config.app.txCheckInterval, async () => {
     if (isLocked) return
 
     isLocked = true
@@ -59,7 +59,7 @@ export const spawnTransactionsJobs = (
       JSON.parse(jobStatus.state as string) as { lastHeight: number }
     ).lastHeight
 
-    if (lastCheckHeight + index.app.heightSkipPerHeight >= currentHeight) {
+    if (lastCheckHeight + config.app.heightSkipPerHeight >= currentHeight) {
       isLocked = false
       return
     }
@@ -85,7 +85,7 @@ export const spawnTransactionsJobs = (
       where: { jobName: JobName.TRANSACTIONS },
       data: {
         state: JSON.stringify({
-          lastHeight: lastCheckHeight + index.app.heightSkipPerHeight
+          lastHeight: lastCheckHeight + config.app.heightSkipPerHeight
         })
       }
     })

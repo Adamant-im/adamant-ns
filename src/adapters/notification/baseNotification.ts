@@ -15,15 +15,3 @@ export interface BaseNotificationInterface {
     data?: { [key: string]: string }
   ): void
 }
-
-export class BaseNotification implements BaseNotificationInterface {
-  provider: PushServiceProvider | undefined
-
-  message(): Promise<string> {
-    throw new Error('Not implemented')
-  }
-
-  messageMany(): void {
-    throw new Error('Not implemented')
-  }
-}

@@ -44,7 +44,7 @@ if (!result.success) {
   throw new Error(`Service's config is wrong:\n${message}Cannot start the bot.`)
 }
 
-export const index = {
+export const config = {
   app: {
     name: 'adamant-ns',
     version: packageFile.version,

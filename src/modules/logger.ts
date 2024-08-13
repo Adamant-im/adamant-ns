@@ -1,14 +1,14 @@
 import path from 'path'
 import { createLogger as createPinoLogger } from 'adamant-module-logger'
-import { index } from '../config/index.js'
+import { config } from '../config/index.js'
 
 export const createLogger = () => {
   return createPinoLogger(
     {
-      name: index.app.name
+      name: config.app.name
     },
     {
-      destination: path.join(index.app.projectRoot, 'logs')
+      destination: path.join(config.app.projectRoot, 'logs')
     }
   )
 }

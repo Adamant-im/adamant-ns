@@ -1,6 +1,6 @@
 import { ChatMessageTransaction } from 'adamant-api/dist/api/generated.js'
 import { decodeMessage } from 'adamant-api'
-import { index } from '../config/index.js'
+import { config } from '../config/index.js'
 import { PushServiceProvider, SignalMessagePayload } from '../types/models.js'
 import { PrismaClient } from '@prisma/client'
 import { Logger } from '../types/index.js'
@@ -14,7 +14,7 @@ export const processSignalTransaction = async (
     decodeMessage(
       tx.asset?.chat?.message,
       tx.senderPublicKey,
-      index.adamantAccount.passPhrase,
+      config.adamantAccount.passPhrase,
       tx.asset?.chat?.own_message
     ).trim()
   ) as SignalMessagePayload

@@ -2,7 +2,7 @@ import { AnyTransaction, decodeMessage } from 'adamant-api'
 import { processSignalTransaction } from './processSignalTransaction.js'
 import { ChatMessageTransaction } from 'adamant-api/dist/api/generated.js'
 import { processTransactionToNotify } from './processTransactionToNotify.js'
-import { index } from '../config/index.js'
+import { config } from '../config/index.js'
 import { SignalMessagePayload } from '../types/models.js'
 import { PrismaClient } from '@prisma/client'
 import { BaseNotificationInterface } from '../adapters/notification/baseNotification.js'
@@ -25,7 +25,7 @@ export async function txsParser(
     isTxToNotify = false
 
   if (
-    tx.recipientId === index.adamantAccount.address &&
+    tx.recipientId === config.adamantAccount.address &&
     tx.type === 8 &&
     tx.asset?.chat?.type === 3
   ) {
@@ -33,7 +33,7 @@ export async function txsParser(
       decodeMessage(
         tx.asset?.chat?.message,
         tx.senderPublicKey,
-        index.adamantAccount.passPhrase,
+        config.adamantAccount.passPhrase,
         tx.asset?.chat?.own_message
       ).trim()
     ) as SignalMessagePayload
@@ -44,11 +44,11 @@ export async function txsParser(
     ) {
       isSignalTx = true
     }
-  } else if (index.notify.notifyTxTypes.includes(tx.type)) {
+  } else if (config.notify.notifyTxTypes.includes(tx.type)) {
     if (
       !(
         tx.type === 8 &&
-        index.notify.chatTxTypeIncludeSubtype.includes(tx.asset?.chat?.type)
+        config.notify.chatTxTypeIncludeSubtype.includes(tx.asset?.chat?.type)
       )
     ) {
       return
@@ -67,7 +67,8 @@ export async function txsParser(
     await processTransactionToNotify(
       prisma,
       notificationService,
-      tx as AnyTransaction
+      tx as AnyTransaction,
+      logger
     )
   }
 

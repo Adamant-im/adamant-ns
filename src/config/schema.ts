@@ -18,5 +18,3 @@ export const schema = z
   .strict() /* Throw error on unknown properties. This will help users to migrate from the
  * older versions of the bot that use different config schema
  */
-
-export type Schema = z.infer<typeof schema>
