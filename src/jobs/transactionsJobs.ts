@@ -1,18 +1,12 @@
-import { AdamantApi } from 'adamant-api'
-import { PrismaClient } from '@prisma/client'
 import { schedule } from 'node-cron'
 import { config } from '../config/index.js'
 import { JobName } from '@prisma/client'
 import { txsParser } from '../services/txsParser.js'
-import { BaseNotificationInterface } from '../adapters/notification/baseNotification.js'
-import { Logger } from '../types/index.js'
+import { prisma } from '../modules/prisma.js'
+import { adamantClient } from '../modules/adamantClient.js'
+import { logger } from '../modules/logger.js'
 
-export const spawnTransactionsJobs = (
-  adamantClient: AdamantApi,
-  notificationService: BaseNotificationInterface,
-  prisma: PrismaClient,
-  logger: Logger
-) => {
+export const spawnTransactionsJobs = () => {
   let isLocked = false
 
   adamantClient.initSocket({
@@ -22,9 +16,7 @@ export const spawnTransactionsJobs = (
   logger.info(
     `Adamant Client socket initialized on ${config.adamantAccount.address} address`
   )
-  adamantClient.socket?.on((tx) =>
-    txsParser(prisma, notificationService, tx, logger)
-  )
+  adamantClient.socket?.on((tx) => txsParser(tx))
   adamantClient.socket?.catch((error) => logger.error(error))
 
   logger.info(
@@ -78,7 +70,7 @@ export const spawnTransactionsJobs = (
     }
 
     txs.transactions.forEach((tx) => {
-      txsParser(prisma, notificationService, tx, logger)
+      txsParser(tx)
     })
 
     await prisma.cronJobStatus.update({

@@ -4,18 +4,11 @@ import { ChatMessageTransaction } from 'adamant-api/dist/api/generated.js'
 import { processTransactionToNotify } from './processTransactionToNotify.js'
 import { config } from '../config/index.js'
 import { SignalMessagePayload } from '../types/models.js'
-import { PrismaClient } from '@prisma/client'
-import { BaseNotificationInterface } from '../adapters/notification/baseNotification.js'
-import { Logger } from '../types/index.js'
+import { logger } from '../modules/logger.js'
 
 const processedTxs: { [key: string]: AnyTransaction } = {} // cache for processed transactions
 
-export async function txsParser(
-  prisma: PrismaClient,
-  notificationService: BaseNotificationInterface,
-  tx: AnyTransaction,
-  logger: Logger
-) {
+export async function txsParser(tx: AnyTransaction) {
   if (processedTxs[tx.id]) {
     delete processedTxs[tx.id] // removing from cache because we got tx again from rest api or socket
     return
@@ -61,15 +54,10 @@ export async function txsParser(
     logger.info(
       `Got signal transaction to subscribe to notifications, txId: ${tx.id}, processing...`
     )
-    await processSignalTransaction(prisma, tx as ChatMessageTransaction, logger)
+    await processSignalTransaction(tx as ChatMessageTransaction)
   } else if (isTxToNotify) {
     logger.info(`Got transaction to notify, txId: ${tx.id}, processing...`)
-    await processTransactionToNotify(
-      prisma,
-      notificationService,
-      tx as AnyTransaction,
-      logger
-    )
+    await processTransactionToNotify(tx as AnyTransaction)
   }
 
   processedTxs[tx.id] = tx

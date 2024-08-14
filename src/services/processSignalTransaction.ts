@@ -2,14 +2,10 @@ import { ChatMessageTransaction } from 'adamant-api/dist/api/generated.js'
 import { decodeMessage } from 'adamant-api'
 import { config } from '../config/index.js'
 import { PushServiceProvider, SignalMessagePayload } from '../types/models.js'
-import { PrismaClient } from '@prisma/client'
-import { Logger } from '../types/index.js'
+import { prisma } from '../modules/prisma.js'
+import { logger } from '../modules/logger.js'
 
-export const processSignalTransaction = async (
-  prisma: PrismaClient,
-  tx: ChatMessageTransaction,
-  logger: Logger
-) => {
+export const processSignalTransaction = async (tx: ChatMessageTransaction) => {
   const decryptedMessage = JSON.parse(
     decodeMessage(
       tx.asset?.chat?.message,

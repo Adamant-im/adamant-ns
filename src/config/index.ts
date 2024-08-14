@@ -5,25 +5,10 @@ import {
   createAddressFromPublicKey,
   createKeypairFromPassphrase
 } from 'adamant-api'
-import { schema } from './schema.js'
+import { schema, Schema as ConfigSchema } from './schema.js'
 import { fromZodError } from '../utils/zod.js'
 
 const projectRoot = process.cwd()
-
-interface ConfigFile {
-  database: {
-    url: string
-  }
-  app: {
-    port: number
-  }
-  notificationExpiryHours: number
-  admNodes: string[]
-  passPhrase: string
-  notifyTxTypes: number[]
-  chatTxTypeIncludeSubtype: number[]
-  notificationService: 'FCM' | 'APNS'
-}
 
 interface PackageFile {
   version: string
@@ -31,7 +16,7 @@ interface PackageFile {
 
 const configFile = JSON5.parse(
   fs.readFileSync(path.join(projectRoot, 'config.json5'), 'utf8')
-) as ConfigFile
+) as ConfigSchema
 const packageFile = JSON5.parse(
   fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8')
 ) as PackageFile
@@ -53,8 +38,7 @@ export const config = {
     notificationExpiryHours: configFile.notificationExpiryHours,
     txCheckInterval: '*/4 * * * * *', // in cron language
     retryNotifyInterval: '*/4 * * * * *', // */10 * * * * in cron language
-    heightSkipPerHeight: 1,
-    notificationService: configFile.notificationService
+    heightSkipPerHeight: 1
   },
   database: {
     url: configFile.database.url

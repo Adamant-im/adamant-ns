@@ -1,16 +1,11 @@
 import { AnyTransaction } from 'adamant-api'
-import { PrismaClient } from '@prisma/client'
-import { BaseNotificationInterface } from '../adapters/notification/baseNotification.js'
 import { FirebaseError } from 'firebase-admin'
 import { createNotificationBody } from './notification/notificationBody.js'
-import { Logger } from '../types/index.js'
+import { logger } from '../modules/logger.js'
+import { prisma } from '../modules/prisma.js'
+import { pushService } from './pushService.js'
 
-export const processTransactionToNotify = async (
-  prisma: PrismaClient,
-  notificationService: BaseNotificationInterface,
-  tx: AnyTransaction,
-  logger: Logger
-) => {
+export const processTransactionToNotify = async (tx: AnyTransaction) => {
   let devices = await prisma.device.findMany({
     where: { admAddress: tx.recipientId }
   })
@@ -21,11 +16,7 @@ export const processTransactionToNotify = async (
 
   const notification = createNotificationBody(tx)
 
-  devices = devices.filter(
-    (device) =>
-      device.admAddress === tx.recipientId &&
-      device.pushServiceProvider === notificationService.provider
-  )
+  devices = devices.filter((device) => device.admAddress === tx.recipientId)
 
   if (devices.length) {
     logger.info(
@@ -45,10 +36,14 @@ export const processTransactionToNotify = async (
         })
 
         try {
-          await notificationService.message(device.pushToken, notification, {
-            'push-recipient': tx.recipientId,
-            'txn-id': tx.id
-          })
+          await pushService[device.pushServiceProvider].message(
+            device.pushToken,
+            notification,
+            {
+              'push-recipient': tx.recipientId,
+              'txn-id': tx.id
+            }
+          )
 
           await prisma.notifyTransaction.delete({
             where: { id: notifyRecord.id }

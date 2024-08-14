@@ -1,7 +1,6 @@
-export enum PushServiceProvider {
-  FCM = 'FCM',
-  APNS = 'APNS'
-}
+import { $Enums } from '@prisma/client'
+
+export import PushServiceProvider = $Enums.PushServiceProvider
 
 export interface SignalMessagePayload {
   token: string

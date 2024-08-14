@@ -1,16 +1,12 @@
 import { AnyTransaction } from 'adamant-api'
-import { PrismaClient } from '@prisma/client'
 import { schedule } from 'node-cron'
 import { config } from '../config/index.js'
-import { BaseNotificationInterface } from '../adapters/notification/baseNotification.js'
 import { createNotificationBody } from '../services/notification/notificationBody.js'
-import { Logger } from '../types/index.js'
+import { logger } from '../modules/logger.js'
+import { prisma } from '../modules/prisma.js'
+import { pushService } from '../services/pushService.js'
 
-export const spawnRetryNotifyJob = (
-  notificationService: BaseNotificationInterface,
-  prisma: PrismaClient,
-  logger: Logger
-) => {
+export const spawnRetryNotifyJob = () => {
   let isLocked = false
 
   logger.info(
@@ -43,7 +39,7 @@ export const spawnRetryNotifyJob = (
         )
 
         try {
-          await notificationService.message(
+          await pushService[transaction.device.pushServiceProvider].message(
             transaction.device.pushToken,
             notification,
             {

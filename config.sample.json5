@@ -59,12 +59,5 @@
   2 - Rich content messages
   3 - Signal messages
   **/
-  "chatTxTypeIncludeSubtype": [1, 2],
-
-  /**
-  Notification service to use
-  APNS, FCM
-  **/
-
-  "notificationService": "FCM"
+  "chatTxTypeIncludeSubtype": [1, 2]
 }
