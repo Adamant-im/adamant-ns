@@ -1,10 +1,10 @@
 import { schedule } from 'node-cron'
 import { config } from '../config/index.js'
 import { JobName } from '@prisma/client'
-import { txsParser } from '../services/txsParser.js'
 import { prisma } from '../modules/prisma.js'
 import { adamantClient } from '../modules/adamantClient.js'
 import { logger } from '../modules/logger.js'
+import { transactionsChannel } from '../events/channels.js'
 
 export const spawnTransactionsJobs = () => {
   let isLocked = false
@@ -16,13 +16,16 @@ export const spawnTransactionsJobs = () => {
   logger.info(
     `Adamant Client socket initialized on ${config.adamantAccount.address} address`
   )
-  adamantClient.socket?.on((tx) => txsParser(tx))
+  adamantClient.socket?.on((tx) => {
+    transactionsChannel.emit('newTransaction', tx)
+  })
   adamantClient.socket?.catch((error) => logger.error(error))
 
   logger.info(
     `Spawned transaction parser job with ${config.app.txCheckInterval} interval`
   )
-  schedule(config.app.txCheckInterval, async () => {
+
+  return schedule(config.app.txCheckInterval, async () => {
     if (isLocked) return
 
     isLocked = true
@@ -70,7 +73,7 @@ export const spawnTransactionsJobs = () => {
     }
 
     txs.transactions.forEach((tx) => {
-      txsParser(tx)
+      transactionsChannel.emit('newTransaction', tx)
     })
 
     await prisma.cronJobStatus.update({

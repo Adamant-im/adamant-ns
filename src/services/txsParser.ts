@@ -1,19 +1,13 @@
 import { AnyTransaction, decodeMessage } from 'adamant-api'
-import { processSignalTransaction } from './processSignalTransaction.js'
-import { ChatMessageTransaction } from 'adamant-api/dist/api/generated.js'
-import { processTransactionToNotify } from './processTransactionToNotify.js'
 import { config } from '../config/index.js'
 import { SignalMessagePayload } from '../types/models.js'
 import { logger } from '../modules/logger.js'
-
-const processedTxs: { [key: string]: AnyTransaction } = {} // cache for processed transactions
+import {
+  notifyMessagesChannel,
+  signalMessagesChannel
+} from '../events/channels.js'
 
 export async function txsParser(tx: AnyTransaction) {
-  if (processedTxs[tx.id]) {
-    delete processedTxs[tx.id] // removing from cache because we got tx again from rest api or socket
-    return
-  }
-
   let isSignalTx = false,
     isTxToNotify = false
 
@@ -52,13 +46,12 @@ export async function txsParser(tx: AnyTransaction) {
 
   if (isSignalTx) {
     logger.info(
-      `Got signal transaction to subscribe to notifications, txId: ${tx.id}, processing...`
+      `Got signal transaction to (un)subscribe to notifications, txId: ${tx.id}, processing...`
     )
-    await processSignalTransaction(tx as ChatMessageTransaction)
+
+    signalMessagesChannel.emit('newSignalMessage', tx)
   } else if (isTxToNotify) {
     logger.info(`Got transaction to notify, txId: ${tx.id}, processing...`)
-    await processTransactionToNotify(tx as AnyTransaction)
+    notifyMessagesChannel.emit('newMessage', tx)
   }
-
-  processedTxs[tx.id] = tx
 }
