@@ -59,5 +59,11 @@
   2 - Rich content messages
   3 - Signal messages
   **/
-  "chatTxTypeIncludeSubtype": [1, 2]
+  "chatTxTypeIncludeSubtype": [1, 2],
+
+  /**
+  If the service has been shut down, it will process blocks from the moment of switching off.
+  The setting specifies how many last blocks to notify users about new transactions
+  **/
+  "latestHeightToNotify": 500
 }

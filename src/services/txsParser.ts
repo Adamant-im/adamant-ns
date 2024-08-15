@@ -6,6 +6,7 @@ import {
   notifyMessagesChannel,
   signalMessagesChannel
 } from '../events/channels.js'
+import { adamantClient } from '../modules/adamantClient.js'
 
 export async function txsParser(tx: AnyTransaction) {
   let isSignalTx = false,
@@ -30,6 +31,8 @@ export async function txsParser(tx: AnyTransaction) {
       decryptedMessage['action']
     ) {
       isSignalTx = true
+    } else {
+      return
     }
   } else if (config.notify.notifyTxTypes.includes(tx.type)) {
     if (
@@ -42,6 +45,16 @@ export async function txsParser(tx: AnyTransaction) {
     }
 
     isTxToNotify = true
+  } else {
+    return
+  }
+
+  const getHeightResponse = await adamantClient.getHeight()
+  const currentHeight = getHeightResponse.success ? getHeightResponse.height : 0
+
+  if (tx.height < currentHeight - config.notify.latestHeightToNotify) {
+    // skip if transaction is too old
+    return
   }
 
   if (isSignalTx) {

@@ -47,7 +47,8 @@ export const config = {
   notify: {
     passPhrase: configFile.passPhrase,
     notifyTxTypes: configFile.notifyTxTypes,
-    chatTxTypeIncludeSubtype: configFile.chatTxTypeIncludeSubtype
+    chatTxTypeIncludeSubtype: configFile.chatTxTypeIncludeSubtype,
+    latestHeightToNotify: configFile.latestHeightToNotify
   },
   adamantAccount: {
     passPhrase: configFile.passPhrase,

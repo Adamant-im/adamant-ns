@@ -54,15 +54,28 @@ export const spawnTransactionsJobs = () => {
       JSON.parse(jobStatus.state as string) as { lastHeight: number }
     ).lastHeight
 
-    if (lastCheckHeight + config.app.heightSkipPerHeight >= currentHeight) {
+    // Determine fetch interval
+    let heightToFetch = lastCheckHeight + config.app.heightSkipPerHeight
+
+    if (heightToFetch > currentHeight) {
       isLocked = false
       return
+    }
+
+    if (currentHeight - heightToFetch > 1) {
+      // If the gap is more than 1 block, fetch transactions in chunks of 1000 blocks
+      heightToFetch = lastCheckHeight + 1000
+
+      if (currentHeight - heightToFetch < 0) {
+        // if the gap reaches currenHeight and more, than set it to currentHeight
+        heightToFetch = currentHeight
+      }
     }
 
     const txs = await adamantClient.getTransactions({
       fromHeight: lastCheckHeight,
       and: {
-        toHeight: lastCheckHeight
+        toHeight: heightToFetch
       },
       returnAsset: 1
     })
@@ -80,7 +93,7 @@ export const spawnTransactionsJobs = () => {
       where: { jobName: JobName.TRANSACTIONS },
       data: {
         state: JSON.stringify({
-          lastHeight: lastCheckHeight + config.app.heightSkipPerHeight
+          lastHeight: heightToFetch
         })
       }
     })
