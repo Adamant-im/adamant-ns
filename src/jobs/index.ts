@@ -1,8 +1,8 @@
-import { spawnTransactionsJobs } from './transactionsJobs.js'
+import { transactionsChannel } from '../events/channels/transactionsChannel.js'
 import { spawnRetryNotifyJob } from './retryNotifyJob.js'
 
 export const spawnJobs = () => {
-  const transactionJob = spawnTransactionsJobs()
+  const transactionJob = transactionsChannel.startJob()
   const retryNotifyJob = spawnRetryNotifyJob()
 
   transactionJob.start()

@@ -5,6 +5,7 @@ import { fastify } from './modules/fastify.js'
 import { spawnEventHandlers } from './events/handlers.js'
 import { prisma } from './modules/prisma.js'
 import { logger } from './modules/logger.js'
+import { transactionsChannel } from './events/channels/transactionsChannel.js'
 
 let runningJobs: ReturnType<typeof spawnJobs> = []
 
@@ -13,6 +14,7 @@ export const main = async () => {
   await fastify.listen({ port: config.app.port })
 
   spawnEventHandlers()
+  transactionsChannel.initSocket()
   runningJobs = spawnJobs()
 }
 

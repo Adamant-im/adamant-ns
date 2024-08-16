@@ -17,30 +17,34 @@ export const spawnRetryNotifyJob = () => {
 
     isLocked = true
 
-    const transactionsToNotify = await prisma.notifyTransaction.findMany({
-      where: {
-        isNotified: false,
-        lastNotifyDate: { not: null }
-      },
-      include: {
-        device: true
-      }
-    })
-
-    await Promise.all(
-      transactionsToNotify.map(async (transaction) => {
-        const tx = JSON.parse(transaction.admTx as string) as AnyTransaction
-
-        logger.info(
-          `Got notification that failed to send, processing... DeviceId: ${transaction.device.id}, provider: ${transaction.device.pushServiceProvider}, admTxId: ${tx.id}`
-        )
-
-        processTransactionToNotify(tx, transaction.device).catch((e) =>
-          logger.error(e, 'Failed to process failed transaction to notify')
-        )
+    try {
+      const transactionsToNotify = await prisma.notifyTransaction.findMany({
+        where: {
+          isNotified: false,
+          lastNotifyDate: { not: null }
+        },
+        include: {
+          device: true
+        }
       })
-    )
 
-    isLocked = false
+      await Promise.all(
+        transactionsToNotify.map(async (transaction) => {
+          const tx = JSON.parse(transaction.admTx as string) as AnyTransaction
+
+          logger.info(
+            `Got notification that failed to send, processing... DeviceId: ${transaction.device.id}, provider: ${transaction.device.pushServiceProvider}, admTxId: ${tx.id}`
+          )
+
+          processTransactionToNotify(tx, transaction.device).catch((e) =>
+            logger.error(e, 'Failed to process failed transaction to notify')
+          )
+        })
+      )
+    } catch (err) {
+      logger.error(err, 'Error while running retry notify job')
+    } finally {
+      isLocked = false
+    }
   })
 }

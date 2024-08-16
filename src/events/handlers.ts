@@ -1,37 +1,17 @@
-import {
-  notifyMessagesChannel,
-  signalMessagesChannel,
-  transactionsChannel
-} from './channels.js'
-import { txsParser } from '../services/txsParser.js'
-import { AnyTransaction } from 'adamant-api'
+import { transactionsChannel } from './channels/transactionsChannel.js'
 import { logger } from '../modules/logger.js'
-import { ChatMessageTransaction } from 'adamant-api/dist/api/generated.js'
 import { processSignalTransaction } from '../services/processSignalTransaction.js'
 import { processTransactionToNotify } from '../services/processTransactionToNotify.js'
 import { prisma } from '../modules/prisma.js'
 
 export const spawnEventHandlers = () => {
-  const processedTxs: { [key: string]: AnyTransaction } = {} // cache for processed transactions
-
-  transactionsChannel.on('newTransaction', (tx: AnyTransaction) => {
-    if (processedTxs[tx.id]) {
-      delete processedTxs[tx.id] // removing from cache because we got tx again from rest api or socket
-      return
-    }
-
-    processedTxs[tx.id] = tx
-
-    txsParser(tx).catch((e) => logger.error(e, 'Failed to parsed transaction'))
-  })
-
-  signalMessagesChannel.on('newSignalMessage', (tx: ChatMessageTransaction) => {
+  transactionsChannel.on('newSignalMessage', (tx) => {
     processSignalTransaction(tx).catch((e) =>
       logger.error(e, 'Failed to process signal transaction')
     )
   })
 
-  notifyMessagesChannel.on('newMessage', async (tx: AnyTransaction) => {
+  transactionsChannel.on('newMessage', async (tx) => {
     let devices = await prisma.device.findMany({
       where: { admAddress: tx.recipientId }
     })
