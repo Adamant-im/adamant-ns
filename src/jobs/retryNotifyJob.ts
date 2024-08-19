@@ -1,9 +1,8 @@
-import { AnyTransaction } from 'adamant-api'
 import { schedule } from 'node-cron'
 import { config } from '../config/index.js'
 import { logger } from '../modules/logger.js'
 import { prisma } from '../modules/prisma.js'
-import { processTransactionToNotify } from '../services/processTransactionToNotify.js'
+import { processTransactionsToNotify } from '../services/processTransactionToNotify.js'
 
 export const spawnRetryNotifyJob = () => {
   let isLocked = false
@@ -28,19 +27,15 @@ export const spawnRetryNotifyJob = () => {
         }
       })
 
-      await Promise.all(
-        transactionsToNotify.map(async (transaction) => {
-          const tx = JSON.parse(transaction.admTx as string) as AnyTransaction
+      if (!transactionsToNotify.length) {
+        return
+      }
 
-          logger.info(
-            `Got notification that failed to send, processing... DeviceId: ${transaction.device.id}, provider: ${transaction.device.pushServiceProvider}, admTxId: ${tx.id}`
-          )
-
-          processTransactionToNotify(tx, transaction.device).catch((e) =>
-            logger.error(e, 'Failed to process failed transaction to notify')
-          )
-        })
+      logger.info(
+        `Got notifications that failed to send, processing... AdmTxIds: ${transactionsToNotify.map((tx) => tx.admTxId).join(', ')}`
       )
+
+      await processTransactionsToNotify(transactionsToNotify)
     } catch (err) {
       logger.error(err, 'Error while running retry notify job')
     } finally {

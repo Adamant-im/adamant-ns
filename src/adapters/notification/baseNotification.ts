@@ -10,8 +10,10 @@ export interface BaseNotificationInterface {
   ): Promise<string>
 
   messageMany(
-    pushTokens: string[],
-    notification: { title: string; body: string },
-    data?: { [key: string]: string }
-  ): void
+    notifications: {
+      token: string
+      notification: { title: string; body: string }
+      data?: { [key: string]: string }
+    }[]
+  ): Promise<unknown>
 }

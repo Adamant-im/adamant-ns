@@ -8,7 +8,7 @@ export class ApnsNotification implements BaseNotificationInterface {
     throw new Error('Not implemented')
   }
 
-  messageMany() {
+  messageMany(): Promise<void> {
     throw new Error('Not implemented')
   }
 }

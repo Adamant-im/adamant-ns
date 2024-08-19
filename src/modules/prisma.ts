@@ -2,7 +2,6 @@ import { PrismaClient } from '@prisma/client'
 import { config } from '../config/index.js'
 import { logger } from './logger.js'
 
-console.log(config.database.url)
 export const prisma = new PrismaClient({
   datasources: {
     db: {

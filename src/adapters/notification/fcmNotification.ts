@@ -6,6 +6,12 @@ import fs from 'fs'
 import path from 'path'
 import { config } from '../../config/index.js'
 
+export const invalidTokenErrorCodes = [
+  'messaging/registration-token-not-registered',
+  'messaging/invalid-argument',
+  'messaging/invalid-recipient'
+]
+
 export class FcmNotification implements BaseNotificationInterface {
   private service
   provider = PushServiceProvider.FCM
@@ -34,16 +40,12 @@ export class FcmNotification implements BaseNotificationInterface {
   }
 
   messageMany(
-    pushTokens: string[],
-    notification: { title: string; body: string },
-    data?: { [key: string]: string }
+    notifications: {
+      token: string
+      notification: { title: string; body: string }
+      data?: { [key: string]: string }
+    }[]
   ) {
-    this.service.messaging().sendEach(
-      pushTokens.map((pushToken) => ({
-        notification,
-        token: pushToken,
-        ...(data ? { data } : {})
-      }))
-    )
+    return this.service.messaging().sendEach(notifications)
   }
 }
