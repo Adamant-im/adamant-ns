@@ -12,11 +12,9 @@ export const spawnEventHandlers = () => {
   })
 
   transactionsChannel.on('newMessage', async (tx) => {
-    let devices = await prisma.device.findMany({
+    const devices = await prisma.device.findMany({
       where: { admAddress: tx.recipientId }
     })
-
-    devices = devices.filter((device) => device.admAddress === tx.recipientId)
 
     if (!devices.length) {
       return

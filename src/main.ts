@@ -15,6 +15,7 @@ export const main = async () => {
 
   spawnEventHandlers()
   transactionsChannel.initSocket()
+  transactionsChannel.startJob()
   runningJobs = spawnJobs()
 }
 
@@ -44,6 +45,13 @@ export const shutdown = async () => {
       process.exit(1)
     }
   })
+
+  try {
+    transactionsChannel.destroy()
+    logger.info('Stopped transactions channel running tasks')
+  } catch (error) {
+    logger.error(error, 'Failed to stop transactions channel running tasks')
+  }
 
   process.exit(0)
 }

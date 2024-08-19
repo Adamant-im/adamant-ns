@@ -1,6 +1,6 @@
 import EventEmitter from 'events'
 import { AnyTransaction, WebSocketClient } from 'adamant-api'
-import { schedule } from 'node-cron'
+import { schedule, ScheduledTask } from 'node-cron'
 import { logger } from '../../modules/logger.js'
 import { config } from '../../config/index.js'
 import { adamantClient } from '../../modules/adamantClient.js'
@@ -28,6 +28,7 @@ class TransactionsChannel extends EventEmitter {
   }
 
   private isLocked: boolean
+  private job?: ScheduledTask
   private processedTxs: { [key: string]: AnyTransaction } = {} // cache for processed transactions
   adamantSocket?: WebSocketClient
 
@@ -46,9 +47,7 @@ class TransactionsChannel extends EventEmitter {
     )
 
     if (adamantClient.socket) {
-      adamantClient.socket.on((tx) => {
-        this.handleTransaction(tx)
-      })
+      adamantClient.socket.on(this.handleTransaction.bind(this))
       adamantClient.socket.catch((error) => logger.error(error))
 
       this.adamantSocket = adamantClient.socket
@@ -59,7 +58,7 @@ class TransactionsChannel extends EventEmitter {
     logger.info(
       `Spawned transaction parser job with ${config.app.txCheckInterval} interval`
     )
-    return schedule(config.app.txCheckInterval, async () => {
+    this.job = schedule(config.app.txCheckInterval, async () => {
       if (this.isLocked) return
 
       this.isLocked = true
@@ -108,7 +107,7 @@ class TransactionsChannel extends EventEmitter {
         }
 
         const txs = await adamantClient.getTransactions({
-          fromHeight: lastCheckHeight,
+          fromHeight: lastCheckHeight + 1,
           and: {
             toHeight: heightToFetch
           },
@@ -143,6 +142,8 @@ class TransactionsChannel extends EventEmitter {
         this.isLocked = false
       }
     })
+
+    this.job.start()
   }
 
   handleTransaction(tx: AnyTransaction) {
@@ -160,6 +161,18 @@ class TransactionsChannel extends EventEmitter {
       this.emit('newSignalMessage', tx as ChatMessageTransaction)
     } else if (isTxToNotify(tx)) {
       this.emit('newMessage', tx)
+    }
+  }
+
+  destroy() {
+    if (this.job) {
+      this.job.stop()
+      logger.info('Stopped TransactionsJob job')
+    }
+
+    if (this.adamantSocket) {
+      this.adamantSocket.off(this.handleTransaction)
+      logger.info('Unsubscribed from adamant socket events')
     }
   }
 }
