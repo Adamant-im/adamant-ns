@@ -31,10 +31,12 @@ class TransactionsChannel extends EventEmitter {
   private job?: ScheduledTask
   private processedTxs: { [key: string]: AnyTransaction } = {} // cache for processed transactions
   adamantSocket?: WebSocketClient
+  private readonly handleTransactionRef: (tx: AnyTransaction) => void
 
   constructor() {
     super()
     this.isLocked = false
+    this.handleTransactionRef = this.handleTransaction.bind(this)
   }
 
   initSocket() {
@@ -47,7 +49,7 @@ class TransactionsChannel extends EventEmitter {
     )
 
     if (adamantClient.socket) {
-      adamantClient.socket.on(this.handleTransaction.bind(this))
+      adamantClient.socket.on(this.handleTransactionRef)
       adamantClient.socket.catch((error) => logger.error(error))
 
       this.adamantSocket = adamantClient.socket
@@ -171,7 +173,7 @@ class TransactionsChannel extends EventEmitter {
     }
 
     if (this.adamantSocket) {
-      this.adamantSocket.off(this.handleTransaction)
+      this.adamantSocket.off(this.handleTransactionRef)
       logger.info('Unsubscribed from adamant socket events')
     }
   }
