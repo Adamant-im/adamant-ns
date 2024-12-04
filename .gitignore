@@ -5,3 +5,4 @@ firebase-credentials.json
 logs/*
 !/logs/.gitkeep
 config.json5
+.env
