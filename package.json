@@ -7,7 +7,7 @@
   "scripts": {
     "start": "tsup --onSuccess 'node dist/index.js'",
     "dev": "tsup --watch --onSuccess 'node dist/index.js'",
-    "build": "tsup --dts",
+    "build": "tsup",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write ./src",
