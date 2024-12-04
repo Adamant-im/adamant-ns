@@ -54,3 +54,49 @@ sequenceDiagram
     APNS_FCM-->>UserDevice: Notify user's device
     UserDevice->>UserDevice: Decrypt transaction using private key
 ```
+
+## ANS
+
+To register a token you must sign and send a signal transaction ([AIP-6: Signal Messages](https://aips.adamant.im/AIPS/aip-6)) to an ADAMANT node. You must set the `recipientId` of the current ANS service so the service can decode the transaction.
+
+Payload format:
+
+```ts
+type SignalMessagePayload = {
+  token: string;
+  provider: "apns" | "fcm";
+  action: "add" | "remove";
+}
+```
+
+- `token`: User's device token
+- `provider`: Push service provider
+  - apns: Apple Push Notification service (for iOS app)
+  - fcm: Firebase Cloud Messaging (for Web/Android apps)
+- `action`: Signal action
+  - add: register new devise
+  - remove: unregister device
+
+### Register new device
+
+The service will save the token to the database and start monitoring new messages on the blockchain. As soon as a new message arrives, a push notification will be sent.
+
+```json
+{
+  "token": "DeviceToken",
+  "provider": "fcm",
+  "action": "add"
+}
+```
+
+### Unregister device
+
+The service will remove the device token from the database and stop sending push notifications.
+
+```json
+{
+  "token": "DeviceToken",
+  "provider": "fcm",
+  "action": "remove"
+}
+```
