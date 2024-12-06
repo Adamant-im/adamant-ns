@@ -5,8 +5,8 @@
   "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "start": "tsup --onSuccess 'node dist/index.js'",
-    "dev": "tsup --watch --onSuccess 'node dist/index.js'",
+    "start": "tsup --onSuccess 'node -r source-map-support/register dist/index.js'",
+    "dev": "tsup --watch --onSuccess 'node -r source-map-support/register dist/index.js'",
     "build": "tsup",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -38,6 +38,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^15.2.10",
     "prettier": "^3.4.2",
+    "source-map-support": "^0.5.21",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",
     "typescript-eslint": "^7.18.0"
