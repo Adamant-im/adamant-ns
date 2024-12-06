@@ -37,8 +37,20 @@ export const processSignalTransaction = async (tx: ChatMessageTransaction) => {
     logger.info(
       `Removing device from notifications, admAddress: ${payload.admAddress}, pushServiceProvider: ${payload.pushServiceProvider}`
     )
-    await prisma.device.delete({
-      where: payload
-    })
+
+    try {
+      await prisma.device.delete({
+        where: payload
+      })
+
+      logger.info(
+        `Removed device for ${payload.admAddress} address of ${payload.pushServiceProvider} provider`
+      )
+    } catch (err) {
+      logger.warn(
+        err,
+        `Failed to remove device for ${payload.admAddress} address of ${payload.pushServiceProvider} provider`
+      )
+    }
   }
 }
