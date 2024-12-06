@@ -1,14 +1,7 @@
 import { PrismaClient } from '@prisma/client'
-import { config } from '../config/index.js'
 import { logger } from './logger.js'
 
-export const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: config.database.url
-    }
-  }
-})
+export const prisma = new PrismaClient()
 
 export const checkConnection = async (client: PrismaClient) => {
   try {

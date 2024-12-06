@@ -1,12 +1,4 @@
 {
-  /**
-    PostgreSQL database url
-    used to store tokens and fetched transactions
-  **/
-  "database": {
-    "url": "postgresql://postgres:postgres@localhost:5432/adamant_ns?schema=public"
-  },
-
   "app": {
     /**
       Server port with health check endpoint

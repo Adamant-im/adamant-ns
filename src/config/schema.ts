@@ -2,9 +2,6 @@ import { z } from 'zod'
 
 export const schema = z
   .object({
-    database: z.object({
-      url: z.string()
-    }),
     app: z.object({
       port: z.number()
     }),

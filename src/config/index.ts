@@ -40,9 +40,6 @@ export const config = {
     retryNotifyInterval: '*/4 * * * * *', // */10 * * * * in cron language
     heightSkipPerHeight: 1
   },
-  database: {
-    url: configFile.database.url
-  },
   nodes: configFile.admNodes,
   notify: {
     passPhrase: configFile.passPhrase,
