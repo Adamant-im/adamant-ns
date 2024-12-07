@@ -4,6 +4,9 @@
     "@tsconfig/node20/tsconfig.json",
     "@tsconfig/strictest/tsconfig.json"
   ],
-  "compilerOptions": {},
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "module": "nodenext"
+  },
   "include": ["src/**/*.ts"]
 }
