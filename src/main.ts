@@ -12,8 +12,7 @@ export const main = async () => {
   await server.listen({ port: config.app.port });
 
   spawnEventHandlers();
-  transactionsChannel.initSocket();
-  transactionsChannel.startJob();
+  transactionsChannel.init();
   runningJobs = spawnJobs();
 };
 

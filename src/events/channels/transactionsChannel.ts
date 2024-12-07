@@ -1,65 +1,58 @@
 import EventEmitter from 'events';
-import { AnyTransaction, WebSocketClient } from 'adamant-api';
+import { AnyTransaction } from 'adamant-api';
+import { ChatMessageTransaction } from 'adamant-api/dist/api/generated.js';
 import { schedule, ScheduledTask } from 'node-cron';
+import { JobName } from '@prisma/client';
+
 import { logger } from '../../modules/logger.js';
 import { config } from '../../config/index.js';
 import { adamantClient } from '../../modules/adamantClient.js';
 import { prisma } from '../../modules/prisma.js';
-import { JobName } from '@prisma/client';
 import { isSignalTx } from '../../services/parser/isSignalTx.js';
 import { isTxToNotify } from '../../services/parser/isTxToNotify.js';
-import { ChatMessageTransaction } from 'adamant-api/dist/api/generated.js';
 
 class TransactionsChannel extends EventEmitter {
-  // Specify types of events
-  override emit(event: 'newSignalMessage', tx: ChatMessageTransaction): boolean;
-  override emit(event: 'newMessage', tx: AnyTransaction): boolean;
-  override emit(event: string, ...args: never[]): boolean {
-    return super.emit(event, ...args);
-  }
-
-  override on(
-    event: 'newSignalMessage',
-    listener: (tx: ChatMessageTransaction) => void
-  ): this;
-  override on(
-    event: 'newMessage',
-    listener: (tx: AnyTransaction) => void
-  ): this;
-  override on(event: string, listener: (...args: any[]) => void): this {
-    return super.on(event, listener);
-  }
-
   private isLocked: boolean;
   private job?: ScheduledTask;
   private processedTxs: { [key: string]: AnyTransaction } = {}; // cache for processed transactions
-  adamantSocket?: WebSocketClient;
-  private readonly handleTransactionRef: (tx: AnyTransaction) => void;
 
   constructor() {
     super();
     this.isLocked = false;
-    this.handleTransactionRef = this.handleTransaction.bind(this);
   }
 
-  initSocket() {
-    adamantClient.initSocket({
-      wsType: 'ws',
-      admAddress: config.admAddress
-    });
-    logger.info(
-      `Adamant Client socket initialized on ${config.admAddress} address`
-    );
-
+  init() {
     if (adamantClient.socket) {
-      adamantClient.socket.on(this.handleTransactionRef);
+      adamantClient.socket.on(this.handleTransaction);
       adamantClient.socket.catch((error) => logger.error(error));
-
-      this.adamantSocket = adamantClient.socket;
+    } else {
+      logger.warn(
+        '[TransactionsChannel] ADAMANT sockets are not enabled. Using REST as a fallback.'
+      );
     }
+
+    this.startJob();
   }
 
-  startJob() {
+  private handleTransaction = (tx: AnyTransaction) => {
+    if (this.processedTxs[tx.id]) {
+      delete this.processedTxs[tx.id]; // removing from cache because we got tx again from rest api or socket
+      return;
+    }
+
+    this.processedTxs[tx.id] = tx;
+
+    if (isSignalTx(tx)) {
+      logger.info(
+        `Got signal transaction to (un)subscribe to notifications, txId: ${tx.id}, processing...`
+      );
+      this.emit('newSignalMessage', tx as ChatMessageTransaction);
+    } else if (isTxToNotify(tx)) {
+      this.emit('newMessage', tx);
+    }
+  };
+
+  private startJob() {
     logger.info(
       `Spawned transaction parser job with ${config.txCheckInterval} interval`
     );
@@ -151,33 +144,15 @@ class TransactionsChannel extends EventEmitter {
     this.job.start();
   }
 
-  handleTransaction(tx: AnyTransaction) {
-    if (this.processedTxs[tx.id]) {
-      delete this.processedTxs[tx.id]; // removing from cache because we got tx again from rest api or socket
-      return;
-    }
-
-    this.processedTxs[tx.id] = tx;
-
-    if (isSignalTx(tx)) {
-      logger.info(
-        `Got signal transaction to (un)subscribe to notifications, txId: ${tx.id}, processing...`
-      );
-      this.emit('newSignalMessage', tx as ChatMessageTransaction);
-    } else if (isTxToNotify(tx)) {
-      this.emit('newMessage', tx);
-    }
-  }
-
   destroy() {
     if (this.job) {
       this.job.stop();
       logger.info('Stopped TransactionsJob job');
     }
 
-    if (this.adamantSocket) {
-      this.adamantSocket.off(this.handleTransactionRef);
-      logger.info('Unsubscribed from adamant socket events');
+    if (adamantClient.socket) {
+      adamantClient.socket.off(this.handleTransaction);
+      logger.info('Unsubscribed from ADAMANT sockets');
     }
   }
 }
