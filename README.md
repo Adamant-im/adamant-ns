@@ -64,18 +64,18 @@ Payload format:
 ```ts
 type SignalMessagePayload = {
   token: string;
-  provider: "apns" | "fcm";
+  provider: "APNS" | "FCM";
   action: "add" | "remove";
 }
 ```
 
 - `token`: User's device token
 - `provider`: Push service provider
-  - apns: Apple Push Notification service (for iOS app)
-  - fcm: Firebase Cloud Messaging (for Web/Android apps)
+  - `APNS`: Apple Push Notification service (for iOS app)
+  - `FCM`: Firebase Cloud Messaging (for Web/Android apps)
 - `action`: Signal action
-  - add: register new devise
-  - remove: unregister device
+  - `add`: Register new devise
+  - `remove`: Unregister device
 
 ### Register new device
 
@@ -84,7 +84,7 @@ The service will save the token to the database and start monitoring new message
 ```json
 {
   "token": "DeviceToken",
-  "provider": "fcm",
+  "provider": "FCM",
   "action": "add"
 }
 ```
@@ -96,7 +96,7 @@ The service will remove the device token from the database and stop sending push
 ```json
 {
   "token": "DeviceToken",
-  "provider": "fcm",
+  "provider": "FCM",
   "action": "remove"
 }
 ```
