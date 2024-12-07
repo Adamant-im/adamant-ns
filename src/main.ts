@@ -1,7 +1,6 @@
-import { createRoutes } from './routes/index.js'
 import { spawnJobs } from './jobs/index.js'
 import { config } from './config/index.js'
-import { fastify } from './modules/fastify.js'
+import { server } from './server.js'
 import { spawnEventHandlers } from './events/handlers.js'
 import { prisma } from './modules/prisma.js'
 import { logger } from './modules/logger.js'
@@ -10,8 +9,7 @@ import { transactionsChannel } from './events/channels/transactionsChannel.js'
 let runningJobs: ReturnType<typeof spawnJobs> = []
 
 export const main = async () => {
-  createRoutes()
-  await fastify.listen({ port: config.app.port })
+  await server.listen({ port: config.app.port })
 
   spawnEventHandlers()
   transactionsChannel.initSocket()
@@ -21,7 +19,7 @@ export const main = async () => {
 
 export const shutdown = async () => {
   try {
-    await fastify.close()
+    await server.close()
     logger.info('Stopped fastify server')
   } catch (error) {
     logger.error(error, 'Failed to stop fastify server')
