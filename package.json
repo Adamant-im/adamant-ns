@@ -60,7 +60,7 @@
     "adamant-module-logger": "github:Adamant-im/adamant-module-logger",
     "bignumber.js": "^9.1.2",
     "dotenv": "^16.4.7",
-    "fastify": "^4.29.0",
+    "fastify": "^5.1.0",
     "firebase-admin": "^12.7.0",
     "json5": "^2.2.3",
     "node-cron": "^3.0.3",
