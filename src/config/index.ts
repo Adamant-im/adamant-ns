@@ -5,8 +5,8 @@ import {
   createAddressFromPublicKey,
   createKeypairFromPassphrase
 } from 'adamant-api';
-import { getAppName, getAppVersion } from '../utils/app.js';
 
+import { getAppName, getAppVersion } from '../utils/app.js';
 import { fromZodError } from '../utils/zod.js';
 import { TConfigSchema, ZConfigSchema } from './schema.js';
 
