@@ -4,8 +4,8 @@ import { createLogger } from 'adamant-module-logger';
 import { config } from '../config/index.js';
 
 export const { logger } = createLogger(
-  { name: config.app.name },
+  { name: config.appName },
   {
-    destination: path.join(config.app.projectRoot, 'logs')
+    destination: path.join(config.projectRoot, 'logs')
   }
 );

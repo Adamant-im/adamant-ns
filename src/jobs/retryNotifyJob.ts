@@ -8,10 +8,10 @@ export const spawnRetryNotifyJob = () => {
   let isLocked = false;
 
   logger.info(
-    `Spawned retry notify job with ${config.app.retryNotifyInterval} interval`
+    `Spawned retry notify job with ${config.retryNotifyInterval} interval`
   );
 
-  return schedule(config.app.retryNotifyInterval, async () => {
+  return schedule(config.retryNotifyInterval, async () => {
     if (isLocked) return;
 
     isLocked = true;

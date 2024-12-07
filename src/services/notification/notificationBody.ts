@@ -12,7 +12,7 @@ export const createNotificationBody = (tx: AnyTransaction) => {
     const decryptedMessage = decodeMessage(
       tx.asset?.chat?.message,
       tx.senderPublicKey,
-      config.adamantAccount.passPhrase,
+      config.passPhrase,
       tx.asset?.chat?.own_message
     ).trim();
 

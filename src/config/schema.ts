@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const schema = z
+export const ZConfigSchema = z
   .object({
     app: z.object({
       port: z.number()
@@ -16,4 +16,4 @@ export const schema = z
  * older versions of the bot that use different config schema
  */
 
-export type Schema = z.infer<typeof schema>;
+export type TConfigSchema = z.infer<typeof ZConfigSchema>;

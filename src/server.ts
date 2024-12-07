@@ -9,7 +9,7 @@ export const server = fastify({ logger });
 server.get('/', async (_req, reply) => {
   reply.send({
     timestamp: new Date().getTime(),
-    version: config.app.version,
+    version: config.appVersion,
     databaseConnection: await checkConnection()
   });
 });

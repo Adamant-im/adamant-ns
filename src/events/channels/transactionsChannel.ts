@@ -45,10 +45,10 @@ class TransactionsChannel extends EventEmitter {
   initSocket() {
     adamantClient.initSocket({
       wsType: 'ws',
-      admAddress: config.adamantAccount.address
+      admAddress: config.admAddress
     });
     logger.info(
-      `Adamant Client socket initialized on ${config.adamantAccount.address} address`
+      `Adamant Client socket initialized on ${config.admAddress} address`
     );
 
     if (adamantClient.socket) {
@@ -61,9 +61,9 @@ class TransactionsChannel extends EventEmitter {
 
   startJob() {
     logger.info(
-      `Spawned transaction parser job with ${config.app.txCheckInterval} interval`
+      `Spawned transaction parser job with ${config.txCheckInterval} interval`
     );
-    this.job = schedule(config.app.txCheckInterval, async () => {
+    this.job = schedule(config.txCheckInterval, async () => {
       if (this.isLocked) return;
 
       this.isLocked = true;
@@ -94,7 +94,7 @@ class TransactionsChannel extends EventEmitter {
         ).lastHeight;
 
         // Determine fetch interval
-        let heightToFetch = lastCheckHeight + config.app.heightSkipPerHeight;
+        let heightToFetch = lastCheckHeight + config.heightSkipPerHeight;
 
         if (heightToFetch > currentHeight) {
           this.isLocked = false;
@@ -125,7 +125,7 @@ class TransactionsChannel extends EventEmitter {
         }
 
         txs.transactions.forEach((tx) => {
-          if (tx.height < currentHeight - config.notify.latestHeightToNotify) {
+          if (tx.height < currentHeight - config.latestHeightToNotify) {
             // skip if transaction is too old
             return;
           }

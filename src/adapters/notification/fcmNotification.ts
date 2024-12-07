@@ -19,7 +19,7 @@ export class FcmNotification implements BaseNotificationInterface {
   constructor() {
     const credentials = JSON5.parse(
       fs.readFileSync(
-        path.join(config.app.projectRoot, 'firebase-credentials.json'),
+        path.join(config.projectRoot, 'firebase-credentials.json'),
         'utf8'
       )
     ) as ServiceAccount;

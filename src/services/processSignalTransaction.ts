@@ -10,7 +10,7 @@ export const processSignalTransaction = async (tx: ChatMessageTransaction) => {
     decodeMessage(
       tx.asset?.chat?.message,
       tx.senderPublicKey,
-      config.adamantAccount.passPhrase,
+      config.passPhrase,
       tx.asset?.chat?.own_message
     ).trim()
   ) as TSignalMessagePayload;

@@ -4,7 +4,7 @@ import { TSignalMessagePayload } from '../../types/models.js';
 
 export const isSignalTx = (tx: AnyTransaction) => {
   if (
-    tx.recipientId === config.adamantAccount.address &&
+    tx.recipientId === config.admAddress &&
     tx.type === 8 &&
     tx.asset?.chat?.type === 3
   ) {
@@ -12,7 +12,7 @@ export const isSignalTx = (tx: AnyTransaction) => {
       decodeMessage(
         tx.asset?.chat?.message,
         tx.senderPublicKey,
-        config.adamantAccount.passPhrase,
+        config.passPhrase,
         tx.asset?.chat?.own_message
       ).trim()
     ) as TSignalMessagePayload;
