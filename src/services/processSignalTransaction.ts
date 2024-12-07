@@ -1,7 +1,7 @@
 import { ChatMessageTransaction } from 'adamant-api/dist/api/generated.js'
 import { decodeMessage } from 'adamant-api'
 import { config } from '../config/index.js'
-import { PushServiceProvider, SignalMessagePayload } from '../types/models.js'
+import { TSignalMessagePayload } from '../types/models.js'
 import { prisma } from '../modules/prisma.js'
 import { logger } from '../modules/logger.js'
 
@@ -13,15 +13,12 @@ export const processSignalTransaction = async (tx: ChatMessageTransaction) => {
       config.adamantAccount.passPhrase,
       tx.asset?.chat?.own_message
     ).trim()
-  ) as SignalMessagePayload
+  ) as TSignalMessagePayload
 
   const payload = {
     pushToken: String(decryptedMessage.token),
     admAddress: tx.senderId,
-    pushServiceProvider:
-      decryptedMessage.provider.toLowerCase() === 'apns'
-        ? PushServiceProvider.APNS
-        : PushServiceProvider.FCM
+    pushServiceProvider: decryptedMessage.provider
   }
 
   if (decryptedMessage.action.toLowerCase() === 'add') {

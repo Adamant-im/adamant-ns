@@ -1,6 +1,6 @@
 import { config } from '../../config/index.js'
 import { AnyTransaction, decodeMessage } from 'adamant-api'
-import { SignalMessagePayload } from '../../types/models.js'
+import { TSignalMessagePayload } from '../../types/models.js'
 
 export const isSignalTx = (tx: AnyTransaction) => {
   if (
@@ -15,7 +15,7 @@ export const isSignalTx = (tx: AnyTransaction) => {
         config.adamantAccount.passPhrase,
         tx.asset?.chat?.own_message
       ).trim()
-    ) as SignalMessagePayload
+    ) as TSignalMessagePayload
     if (
       decryptedMessage['token'] &&
       decryptedMessage['provider'] &&
