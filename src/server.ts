@@ -1,10 +1,18 @@
 import { fastify } from 'fastify';
+import {
+  serializerCompiler,
+  validatorCompiler,
+  ZodTypeProvider
+} from 'fastify-type-provider-zod';
 
 import { config } from './config/index.js';
-import { logger } from './modules/logger.js';
 import { checkConnection } from './modules/prisma.js';
+import { ZSignalMessagePayload } from './types/models.js';
 
-export const server = fastify({ logger });
+export const server = fastify();
+
+server.setValidatorCompiler(validatorCompiler);
+server.setSerializerCompiler(serializerCompiler);
 
 server.get('/', async (_req, reply) => {
   reply.send({
@@ -12,4 +20,13 @@ server.get('/', async (_req, reply) => {
     version: config.appVersion,
     databaseConnection: await checkConnection()
   });
+});
+
+server.withTypeProvider<ZodTypeProvider>().route({
+  method: 'POST',
+  url: '/debug/subscribe',
+  schema: { body: ZSignalMessagePayload },
+  async handler() {
+    return true;
+  }
 });
