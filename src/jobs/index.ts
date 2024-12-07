@@ -1,14 +1,14 @@
-import { spawnRetryNotifyJob } from './retryNotifyJob.js'
+import { spawnRetryNotifyJob } from './retryNotifyJob.js';
 
 export const spawnJobs = () => {
-  const retryNotifyJob = spawnRetryNotifyJob()
+  const retryNotifyJob = spawnRetryNotifyJob();
 
-  retryNotifyJob.start()
+  retryNotifyJob.start();
 
   return [
     {
       name: 'RetryNotifyJob',
       task: retryNotifyJob
     }
-  ]
-}
+  ];
+};

@@ -1,20 +1,20 @@
-import { schedule } from 'node-cron'
-import { config } from '../config/index.js'
-import { logger } from '../modules/logger.js'
-import { prisma } from '../modules/prisma.js'
-import { processTransactionsToNotify } from '../services/processTransactionToNotify.js'
+import { schedule } from 'node-cron';
+import { config } from '../config/index.js';
+import { logger } from '../modules/logger.js';
+import { prisma } from '../modules/prisma.js';
+import { processTransactionsToNotify } from '../services/processTransactionToNotify.js';
 
 export const spawnRetryNotifyJob = () => {
-  let isLocked = false
+  let isLocked = false;
 
   logger.info(
     `Spawned retry notify job with ${config.app.retryNotifyInterval} interval`
-  )
+  );
 
   return schedule(config.app.retryNotifyInterval, async () => {
-    if (isLocked) return
+    if (isLocked) return;
 
-    isLocked = true
+    isLocked = true;
 
     try {
       const transactionsToNotify = await prisma.notifyTransaction.findMany({
@@ -25,21 +25,21 @@ export const spawnRetryNotifyJob = () => {
         include: {
           device: true
         }
-      })
+      });
 
       if (!transactionsToNotify.length) {
-        return
+        return;
       }
 
       logger.info(
         `Got notifications that failed to send, processing... AdmTxIds: ${transactionsToNotify.map((tx) => tx.admTxId).join(', ')}`
-      )
+      );
 
-      await processTransactionsToNotify(transactionsToNotify)
+      await processTransactionsToNotify(transactionsToNotify);
     } catch (err) {
-      logger.error(err, 'Error while running retry notify job')
+      logger.error(err, 'Error while running retry notify job');
     } finally {
-      isLocked = false
+      isLocked = false;
     }
-  })
-}
+  });
+};

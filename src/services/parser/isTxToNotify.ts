@@ -1,5 +1,5 @@
-import { config } from '../../config/index.js'
-import { AnyTransaction } from 'adamant-api'
+import { config } from '../../config/index.js';
+import { AnyTransaction } from 'adamant-api';
 
 export const isTxToNotify = (tx: AnyTransaction) => {
   if (config.notify.notifyTxTypes.includes(tx.type)) {
@@ -9,11 +9,11 @@ export const isTxToNotify = (tx: AnyTransaction) => {
         config.notify.chatTxTypeIncludeSubtype.includes(tx.asset?.chat?.type)
       )
     ) {
-      return false
+      return false;
     }
 
-    return true
+    return true;
   }
 
-  return false
-}
+  return false;
+};

@@ -1,32 +1,34 @@
-import path from 'path'
-import fs from 'fs'
-import JSON5 from 'json5'
+import path from 'path';
+import fs from 'fs';
+import JSON5 from 'json5';
 import {
   createAddressFromPublicKey,
   createKeypairFromPassphrase
-} from 'adamant-api'
-import { schema, Schema as ConfigSchema } from './schema.js'
-import { fromZodError } from '../utils/zod.js'
+} from 'adamant-api';
+import { schema, Schema as ConfigSchema } from './schema.js';
+import { fromZodError } from '../utils/zod.js';
 
-const projectRoot = process.cwd()
+const projectRoot = process.cwd();
 
 interface PackageFile {
-  version: string
+  version: string;
 }
 
 const configFile = JSON5.parse(
   fs.readFileSync(path.join(projectRoot, 'config.json5'), 'utf8')
-) as ConfigSchema
+) as ConfigSchema;
 const packageFile = JSON5.parse(
   fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8')
-) as PackageFile
+) as PackageFile;
 
-const result = schema.safeParse(configFile)
+const result = schema.safeParse(configFile);
 
 if (!result.success) {
-  const message = fromZodError(result.error)
+  const message = fromZodError(result.error);
 
-  throw new Error(`Service's config is wrong:\n${message}Cannot start the bot.`)
+  throw new Error(
+    `Service's config is wrong:\n${message}Cannot start the bot.`
+  );
 }
 
 export const config = {
@@ -53,4 +55,4 @@ export const config = {
       createKeypairFromPassphrase(configFile.passPhrase).publicKey
     )
   }
-}
+};

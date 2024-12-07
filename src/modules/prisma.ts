@@ -1,7 +1,7 @@
-import { PrismaClient } from '@prisma/client'
-import { logger } from './logger.js'
+import { PrismaClient } from '@prisma/client';
+import { logger } from './logger.js';
 
-export const prisma = new PrismaClient()
+export const prisma = new PrismaClient();
 
 /**
  * Checks the database connection.
@@ -10,10 +10,10 @@ export const prisma = new PrismaClient()
  */
 export const checkConnection = async () => {
   try {
-    await prisma.$queryRaw`SELECT 1`
-    return true
+    await prisma.$queryRaw`SELECT 1`;
+    return true;
   } catch (e) {
-    logger.error(e, 'Failed to connect to the database')
-    return false
+    logger.error(e, 'Failed to connect to the database');
+    return false;
   }
-}
+};
