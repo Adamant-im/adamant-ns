@@ -1,9 +1,20 @@
+# NPM
 node_modules
+package-lock.json
 dist/
+
+# Editors
+.vscode
 .idea
+
+# Config
+.env
+config.json5
 firebase-credentials.json
+
+# Logs
 logs/*
 !/logs/.gitkeep
-config.json5
-.env
-package-lock.json
+
+
+
