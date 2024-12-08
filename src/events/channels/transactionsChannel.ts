@@ -1,46 +1,74 @@
 import EventEmitter from 'events';
 import { AnyTransaction } from 'adamant-api';
 import { ChatMessageTransaction } from 'adamant-api/dist/api/generated.js';
-import { schedule, ScheduledTask } from 'node-cron';
-import { JobName } from '@prisma/client';
 
 import { logger } from '../../modules/logger.js';
 import { config } from '../../config/index.js';
-import { adamantClient } from '../../modules/adamantClient.js';
-import { prisma } from '../../modules/prisma.js';
+import { adamantClient, isReady } from '../../modules/adamantClient.js';
 import { isSignalTx } from '../../services/parser/isSignalTx.js';
 import { isTxToNotify } from '../../services/parser/isTxToNotify.js';
 
 class TransactionsChannel extends EventEmitter {
-  private isLocked: boolean;
-  private job?: ScheduledTask;
-  private processedTxs: { [key: string]: AnyTransaction } = {}; // cache for processed transactions
+  /**
+   * The height of the last block from which transactions were processed.
+   */
+  private lastHeight = 0;
 
-  constructor() {
-    super();
-    this.isLocked = false;
-  }
+  async init() {
+    await isReady();
 
-  init() {
+    // Save current block height
+    const currentHeight = await this.getHeight();
+    this.lastHeight = currentHeight - config.latestHeightToNotify;
+
+    // Download history transactions and process them
+    const transactions = await this.fetchTransactions();
+    for (const transaction of transactions) {
+      this.handleTransaction(transaction);
+    }
+
+    // Start watching new transaction using WS
     if (adamantClient.socket) {
       adamantClient.socket.on(this.handleTransaction);
       adamantClient.socket.catch((error) => logger.error(error));
-    } else {
-      logger.warn(
-        '[TransactionsChannel] ADAMANT sockets are not enabled. Using REST as a fallback.'
-      );
-    }
 
-    this.startJob();
+      logger.info(
+        'Subscribed to ADAMANT sockets. Watching for new transactions in realtime.'
+      );
+    } else {
+      logger.error(
+        'ADAMANT sockets are not enabled. Using REST as a fallback.'
+      );
+      process.exit(1);
+    }
   }
 
-  private handleTransaction = (tx: AnyTransaction) => {
-    if (this.processedTxs[tx.id]) {
-      delete this.processedTxs[tx.id]; // removing from cache because we got tx again from rest api or socket
-      return;
+  /**
+   * Returns current node's blockchain height
+   */
+  private async getHeight() {
+    const response = await adamantClient.getHeight();
+
+    if (response.success) {
+      return response.height;
     }
 
-    this.processedTxs[tx.id] = tx;
+    throw new Error(
+      `Failed to get the ADAMANT node height. Error: ${response.errorMessage}`
+    );
+  }
+
+  /**
+   * Handler for incoming transactions:
+   * - If the transaction is a Signal Message, emits a `newSignalMessage` event.
+   * - If the transaction is a Message, emits a `newMessage` event.
+   *
+   * Other types of transactions are ignored.
+   *
+   * @param tx - The transaction to handle.
+   */
+  private handleTransaction = (tx: AnyTransaction) => {
+    this.lastHeight = tx.height;
 
     if (isSignalTx(tx)) {
       logger.info(
@@ -52,104 +80,61 @@ class TransactionsChannel extends EventEmitter {
     }
   };
 
-  private startJob() {
+  /**
+   * Download transactions from the history for last N blocks by REST API.
+   * This ensures no transactions were missed while the service was down.
+   * Must be called before subscribing to the WebSockets.
+   *
+   * @returns List of transactions
+   */
+  private async fetchTransactions() {
+    const PER_PAGE = 100;
+    const allTransactions: AnyTransaction[] = [];
+
+    let offset = 0;
+    let transactionsCount = 1;
+
     logger.info(
-      `Spawned transaction parser job with ${config.txCheckInterval} interval`
+      `Downloading transactions for last ${config.latestHeightToNotify} blocks...`
     );
-    this.job = schedule(config.txCheckInterval, async () => {
-      if (this.isLocked) return;
 
-      this.isLocked = true;
+    let loopCounter = 0;
+    do {
+      loopCounter++;
 
-      try {
-        const getHeightResponse = await adamantClient.getHeight();
-        const currentHeight = getHeightResponse.success
-          ? getHeightResponse.height
-          : 0;
+      const response = await adamantClient.getTransactions({
+        orderBy: 'timestamp:desc',
+        returnAsset: 1,
+        fromHeight: this.lastHeight,
+        limit: PER_PAGE,
+        offset
+      });
 
-        let jobStatus = await prisma.cronJobStatus.findFirst({
-          where: { jobName: JobName.TRANSACTIONS }
-        });
-
-        if (!jobStatus) {
-          jobStatus = await prisma.cronJobStatus.create({
-            data: {
-              jobName: JobName.TRANSACTIONS,
-              state: JSON.stringify({
-                lastHeight: currentHeight
-              })
-            }
-          });
-        }
-
-        const lastCheckHeight = (
-          JSON.parse(jobStatus.state as string) as { lastHeight: number }
-        ).lastHeight;
-
-        // Determine fetch interval
-        let heightToFetch = lastCheckHeight + config.heightSkipPerHeight;
-
-        if (heightToFetch > currentHeight) {
-          this.isLocked = false;
-          return;
-        }
-
-        if (currentHeight - heightToFetch > 1) {
-          // If the gap is more than 1 block, fetch transactions in chunks of 1000 blocks
-          heightToFetch = lastCheckHeight + 1000;
-
-          if (currentHeight - heightToFetch < 0) {
-            // if the gap reaches currenHeight and more, than set it to currentHeight
-            heightToFetch = currentHeight;
-          }
-        }
-
-        const txs = await adamantClient.getTransactions({
-          fromHeight: lastCheckHeight + 1,
-          and: {
-            toHeight: heightToFetch
-          },
-          returnAsset: 1
-        });
-
-        if (!txs.success) {
-          this.isLocked = false;
-          return;
-        }
-
-        txs.transactions.forEach((tx) => {
-          if (tx.height < currentHeight - config.latestHeightToNotify) {
-            // skip if transaction is too old
-            return;
-          }
-
-          this.handleTransaction(tx);
-        });
-
-        await prisma.cronJobStatus.update({
-          where: { jobName: JobName.TRANSACTIONS },
-          data: {
-            state: JSON.stringify({
-              lastHeight: heightToFetch
-            })
-          }
-        });
-      } catch (error) {
-        logger.error(error, 'Error while running transactions channel job');
-      } finally {
-        this.isLocked = false;
+      if (!response.success) {
+        throw new Error(
+          `Failed to query transactions (fromHeight: ${this.lastHeight}, offset: ${offset}). Error: ${response.errorMessage}`
+        );
       }
-    });
 
-    this.job.start();
+      const { transactions, count } = response;
+      allTransactions.push(...transactions);
+
+      transactionsCount = transactions.length;
+      offset += PER_PAGE;
+
+      if (response.transactions.length > 0) {
+        logger.info(
+          `(${loopCounter}) Fetched ${response.transactions.length} transactions (${allTransactions.length} of ${count})`
+        );
+      } else {
+        logger.info(`(${loopCounter}) Fetching done`);
+      }
+    } while (transactionsCount > 0);
+
+    return allTransactions;
   }
 
   destroy() {
-    if (this.job) {
-      this.job.stop();
-      logger.info('Stopped TransactionsJob job');
-    }
-
     if (adamantClient.socket) {
       adamantClient.socket.off(this.handleTransaction);
       logger.info('Unsubscribed from ADAMANT sockets');
