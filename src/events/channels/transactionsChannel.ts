@@ -1,5 +1,9 @@
 import EventEmitter from 'events';
-import { AnyTransaction } from 'adamant-api';
+import {
+  AnyTransaction,
+  ChatMessageAsset,
+  TokenTransferTransaction
+} from 'adamant-api';
 import { ChatMessageTransaction } from 'adamant-api/dist/api/generated.js';
 
 import { logger } from '../../modules/logger.js';
@@ -8,7 +12,35 @@ import { adamantClient, isReady } from '../../modules/adamantClient.js';
 import { isSignalTx } from '../../services/parser/isSignalTx.js';
 import { isTxToNotify } from '../../services/parser/isTxToNotify.js';
 
-class TransactionsChannel extends EventEmitter {
+const Event = {
+  SignalMessage: 'newSignalMessage',
+  ChatMessage: 'newMessage'
+} as const;
+type Event = (typeof Event)[keyof typeof Event];
+
+type SignalTransaction = Omit<ChatMessageTransaction, 'asset'> & {
+  asset: Omit<ChatMessageAsset, 'chat'> & {
+    chat: Omit<ChatMessageAsset['chat'], 'type'> & { type: 3 };
+  };
+};
+
+type MessageTransaction = Omit<ChatMessageTransaction, 'asset'> & {
+  asset: Omit<ChatMessageAsset, 'chat'> & {
+    chat: Omit<ChatMessageAsset['chat'], 'type'> & { type: 1 | 2 };
+  };
+};
+
+type TokenTransaction = Omit<TokenTransferTransaction, 'asset'> & {
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  asset: {};
+};
+
+type TransactionMap = {
+  [Event.SignalMessage]: SignalTransaction;
+  [Event.ChatMessage]: TokenTransaction | MessageTransaction;
+};
+
+class TransactionsChannel<T extends TransactionMap> extends EventEmitter {
   /**
    * The height of the last block from which transactions were processed.
    */
@@ -74,9 +106,9 @@ class TransactionsChannel extends EventEmitter {
       logger.info(
         `Got signal transaction to (un)subscribe to notifications, txId: ${tx.id}, processing...`
       );
-      this.emit('newSignalMessage', tx as ChatMessageTransaction);
+      this.emit(Event.SignalMessage, tx as TransactionMap['newSignalMessage']);
     } else if (isTxToNotify(tx)) {
-      this.emit('newMessage', tx);
+      this.emit(Event.ChatMessage, tx as TransactionMap['newMessage']);
     }
   };
 
@@ -139,6 +171,17 @@ class TransactionsChannel extends EventEmitter {
       adamantClient.socket.off(this.handleTransaction);
       logger.info('Unsubscribed from ADAMANT sockets');
     }
+  }
+
+  /**
+   * Adds an event listener handler for the specific transaction types.
+   */
+  on<K extends keyof T>(event: K, listener: (transaction: T[K]) => void) {
+    return super.on(event as string, listener);
+  }
+
+  emit<K extends keyof T>(event: K, transaction: T[K]) {
+    return super.emit(event as string, transaction);
   }
 }
 
