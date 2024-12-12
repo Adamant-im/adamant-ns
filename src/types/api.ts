@@ -1,7 +1,5 @@
 import { z } from 'zod';
-import { $Enums } from '@prisma/client';
-
-export import PushServiceProvider = $Enums.PushServiceProvider;
+import { PushServiceProvider } from './enums.js';
 
 export const ZSignalMessagePayload = z.object({
   deviceId: z.string(),

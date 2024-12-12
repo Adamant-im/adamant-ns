@@ -1,54 +1,36 @@
-import { spawnJobs } from './jobs/index.js';
+import { App } from './app.js';
 import { config } from './config/index.js';
 import { server } from './server.js';
-import { spawnEventHandlers } from './events/handlers.js';
+import { queue } from './notification-service/notifications.queue.js';
 import { prisma } from './modules/prisma.js';
 import { logger } from './modules/logger.js';
-import { transactionsChannel } from './events/channels/transactionsChannel.js';
 
-let runningJobs: ReturnType<typeof spawnJobs> = [];
+await server.listen({ port: config.app.port });
 
-export const main = async () => {
-  await server.listen({ port: config.app.port });
-
-  spawnEventHandlers();
-  transactionsChannel.init();
-  runningJobs = spawnJobs();
-};
+const app = new App();
+await app.init();
 
 export const shutdown = async () => {
+  logger.info('Shutting down gracefully...');
+
   try {
+    // Stop server and unsubscribe from transactions
     await server.close();
-    logger.info('Stopped fastify server');
-  } catch (error) {
-    logger.error(error, 'Failed to stop fastify server');
-    process.exit(1);
-  }
+    await app.destroy();
+    logger.info('Server stopped');
 
-  try {
+    // Drain transactions queue
+    await queue.FCM.drain();
+    await queue.APNS.drain();
+    logger.info('Queue drained');
+
+    // Close DB connection
     await prisma.$disconnect();
-    logger.info('Stopped prisma connection');
-  } catch (error) {
-    logger.error(error, 'Failed to stop prisma connection');
+    logger.info('DB connection closed');
+
+    process.exit(0);
+  } catch (err) {
+    logger.error(err, 'Failed to shutdown gracefully');
     process.exit(1);
   }
-
-  runningJobs.forEach((job) => {
-    try {
-      job.task.stop();
-      logger.info(`Stopped ${job.name} job`);
-    } catch (error) {
-      logger.error(error, `Failed to stop ${job.name} job`);
-      process.exit(1);
-    }
-  });
-
-  try {
-    transactionsChannel.destroy();
-    logger.info('Stopped transactions channel running tasks');
-  } catch (error) {
-    logger.error(error, 'Failed to stop transactions channel running tasks');
-  }
-
-  process.exit(0);
 };

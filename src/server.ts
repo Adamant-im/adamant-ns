@@ -7,7 +7,7 @@ import {
 
 import { config } from './config/index.js';
 import { checkConnection } from './modules/prisma.js';
-import { ZSignalMessagePayload } from './types/models.js';
+import { ZSignalMessagePayload } from './types/api.js';
 
 export const server = fastify();
 

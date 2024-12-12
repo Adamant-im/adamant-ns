@@ -1,16 +1,20 @@
-import EventEmitter from 'events';
-import {
-  AnyTransaction,
-  ChatMessageAsset,
-  TokenTransferTransaction
-} from 'adamant-api';
-import { ChatMessageTransaction } from 'adamant-api/dist/api/generated.js';
+import { AnyTransaction } from 'adamant-api';
+import { clearTimeout } from 'node:timers';
 
 import { logger } from '../../modules/logger.js';
 import { config } from '../../config/index.js';
-import { adamantClient, isReady } from '../../modules/adamantClient.js';
-import { isSignalTx } from '../../services/parser/isSignalTx.js';
-import { isTxToNotify } from '../../services/parser/isTxToNotify.js';
+import { TypedEventEmitter } from '../../utils/typed-emitter.js';
+import { adamantClient } from '../client.js';
+import { isReady } from '../utils.js';
+import {
+  MessageTransaction,
+  SignalTransaction,
+  TokenTransaction
+} from '../types.js';
+import { isChatMessage, isSignalMessage, isTokenTransfer } from '../guards.js';
+
+const TRANSACTIONS_PER_PAGE = 100;
+const POLLING_INTERVAL = 3000;
 
 const Event = {
   SignalMessage: 'newSignalMessage',
@@ -18,33 +22,19 @@ const Event = {
 } as const;
 type Event = (typeof Event)[keyof typeof Event];
 
-type SignalTransaction = Omit<ChatMessageTransaction, 'asset'> & {
-  asset: Omit<ChatMessageAsset, 'chat'> & {
-    chat: Omit<ChatMessageAsset['chat'], 'type'> & { type: 3 };
-  };
-};
-
-type MessageTransaction = Omit<ChatMessageTransaction, 'asset'> & {
-  asset: Omit<ChatMessageAsset, 'chat'> & {
-    chat: Omit<ChatMessageAsset['chat'], 'type'> & { type: 1 | 2 };
-  };
-};
-
-type TokenTransaction = Omit<TokenTransferTransaction, 'asset'> & {
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  asset: {};
-};
-
 type TransactionMap = {
-  [Event.SignalMessage]: SignalTransaction;
-  [Event.ChatMessage]: TokenTransaction | MessageTransaction;
+  [Event.SignalMessage]: (transaction: SignalTransaction) => void;
+  [Event.ChatMessage]: (
+    transaction: TokenTransaction | MessageTransaction
+  ) => void;
 };
 
-class TransactionsChannel<T extends TransactionMap> extends EventEmitter {
+export class TransactionsChannel extends TypedEventEmitter<TransactionMap> {
   /**
    * The height of the last block from which transactions were processed.
    */
   private lastHeight = 0;
+  private timer: NodeJS.Timeout | undefined;
 
   async init() {
     await isReady();
@@ -65,7 +55,7 @@ class TransactionsChannel<T extends TransactionMap> extends EventEmitter {
       adamantClient.socket.catch((error) => logger.error(error));
 
       logger.info(
-        'Subscribed to ADAMANT sockets. Watching for new transactions in realtime.'
+        `Subscribed to ADAMANT sockets with address ${config.admAddress}. Watching for new transactions in realtime.`
       );
     } else {
       logger.error(
@@ -73,6 +63,53 @@ class TransactionsChannel<T extends TransactionMap> extends EventEmitter {
       );
       process.exit(1);
     }
+
+    // Watch transaction using REST API
+    this.watchTransactions();
+  }
+
+  /**
+   * Watch transactions using REST API.
+   */
+  private watchTransactions() {
+    const handler = async () => {
+      try {
+        const height = await this.getHeight();
+        const response = await adamantClient.getTransactions({
+          orderBy: 'timestamp:desc',
+          returnAsset: 1,
+          fromHeight: height,
+          limit: TRANSACTIONS_PER_PAGE,
+          offset: 0
+        });
+        if (!response.success) {
+          throw new Error(
+            `Failed to query transactions (fromHeight: ${this.lastHeight}). Error: ${response.errorMessage}`
+          );
+        }
+
+        const { transactions } = response;
+        if (transactions.length > 0) {
+          logger.info(
+            `Fetched ${transactions.length} transactions by REST (height: ${height})`
+          );
+        }
+
+        for (const transaction of transactions) {
+          this.handleTransaction(transaction);
+        }
+
+        if (height > this.lastHeight) {
+          this.lastHeight = height;
+        }
+      } catch (err) {
+        logger.warn(err, 'Failed to fetch transactions by REST');
+      } finally {
+        this.timer = setTimeout(handler, POLLING_INTERVAL);
+      }
+    };
+
+    void handler();
   }
 
   /**
@@ -102,13 +139,13 @@ class TransactionsChannel<T extends TransactionMap> extends EventEmitter {
   private handleTransaction = (tx: AnyTransaction) => {
     this.lastHeight = tx.height;
 
-    if (isSignalTx(tx)) {
+    if (isSignalMessage(tx)) {
       logger.info(
         `Got signal transaction to (un)subscribe to notifications, txId: ${tx.id}, processing...`
       );
-      this.emit(Event.SignalMessage, tx as TransactionMap['newSignalMessage']);
-    } else if (isTxToNotify(tx)) {
-      this.emit(Event.ChatMessage, tx as TransactionMap['newMessage']);
+      this.emit(Event.SignalMessage, tx);
+    } else if (isChatMessage(tx) || isTokenTransfer(tx)) {
+      this.emit(Event.ChatMessage, tx);
     }
   };
 
@@ -120,7 +157,6 @@ class TransactionsChannel<T extends TransactionMap> extends EventEmitter {
    * @returns List of transactions
    */
   private async fetchTransactions() {
-    const PER_PAGE = 100;
     const allTransactions: AnyTransaction[] = [];
 
     let offset = 0;
@@ -138,7 +174,7 @@ class TransactionsChannel<T extends TransactionMap> extends EventEmitter {
         orderBy: 'timestamp:desc',
         returnAsset: 1,
         fromHeight: this.lastHeight,
-        limit: PER_PAGE,
+        limit: TRANSACTIONS_PER_PAGE,
         offset
       });
 
@@ -152,7 +188,7 @@ class TransactionsChannel<T extends TransactionMap> extends EventEmitter {
       allTransactions.push(...transactions);
 
       transactionsCount = transactions.length;
-      offset += PER_PAGE;
+      offset += TRANSACTIONS_PER_PAGE;
 
       if (response.transactions.length > 0) {
         logger.info(
@@ -171,18 +207,8 @@ class TransactionsChannel<T extends TransactionMap> extends EventEmitter {
       adamantClient.socket.off(this.handleTransaction);
       logger.info('Unsubscribed from ADAMANT sockets');
     }
-  }
 
-  /**
-   * Adds an event listener handler for the specific transaction types.
-   */
-  on<K extends keyof T>(event: K, listener: (transaction: T[K]) => void) {
-    return super.on(event as string, listener);
-  }
-
-  emit<K extends keyof T>(event: K, transaction: T[K]) {
-    return super.emit(event as string, transaction);
+    clearTimeout(this.timer);
+    logger.info('Transactions fetcher disabled');
   }
 }
-
-export const transactionsChannel = new TransactionsChannel();

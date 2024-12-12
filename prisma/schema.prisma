@@ -12,6 +12,12 @@ enum PushServiceProvider {
   APNS
 }
 
+enum NotificationStatus {
+  Pending
+  Delivered
+  Cancelled
+}
+
 model Device {
   id                  String              @id
   admAddress          String
@@ -21,30 +27,23 @@ model Device {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  notifyTransactions NotifyTransaction[]
+  notifications Notifications[]
 }
 
-model NotifyTransaction {
+model Notifications {
   id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-
-  admTxId   String   @db.VarChar(20)
+  admTxId   String
   admTxDate DateTime
+  admTxType Int // 0, 8
   admTx     Json
 
-  isNotified     Boolean   @default(false)
-  lastNotifyDate DateTime?
+  status NotificationStatus @default(Pending)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   deviceId String
   device   Device @relation(fields: [deviceId], references: [id])
-}
 
-enum JobName {
-  TRANSACTIONS
-}
-
-model CronJobStatus {
-  id      Int     @id @default(autoincrement())
-  jobName JobName @unique
-  state   Json
+  @@unique([admTxId, deviceId])
 }
