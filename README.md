@@ -1,5 +1,15 @@
 # ADAMANT Notification Service (ANS)
 
+## Configuration
+
+1. Fill `config5.json` file with configuration settings (`config.sample.json5` as an example)
+2. Create `firebase-credentials.json` file (`firebase-credentials.example.json` as an example)
+3. `pnpm install`
+4. `export DATABASE_URL=$database-url`
+5. `npx prisma migrate deploy`
+6. `pnpm run build`
+7. `pnpm run start`
+
 ## How it works
 
 To deliver notifcations privately and secure, 4 parties are involved:
@@ -44,4 +54,50 @@ sequenceDiagram
 
     APNS_FCM-->>UserDevice: Notify user's device
     UserDevice->>UserDevice: Decrypt transaction using private key
+```
+
+## ANS
+
+To register a token you must sign and send a signal transaction ([AIP-6: Signal Messages](https://aips.adamant.im/AIPS/aip-6)) to an ADAMANT node. You must set the `recipientId` of the current ANS service so the service can decode the transaction.
+
+Payload format:
+
+```ts
+type SignalMessagePayload = {
+  token: string;
+  provider: "APNS" | "FCM";
+  action: "add" | "remove";
+}
+```
+
+- `token`: User's device token
+- `provider`: Push service provider
+  - `APNS`: Apple Push Notification service (for iOS app)
+  - `FCM`: Firebase Cloud Messaging (for Web/Android apps)
+- `action`: Signal action
+  - `add`: Register new devise
+  - `remove`: Unregister device
+
+### Register new device
+
+The service will save the token to the database and start monitoring new messages on the blockchain. As soon as a new message arrives, a push notification will be sent.
+
+```json
+{
+  "token": "DeviceToken",
+  "provider": "FCM",
+  "action": "add"
+}
+```
+
+### Unregister device
+
+The service will remove the device token from the database and stop sending push notifications.
+
+```json
+{
+  "token": "DeviceToken",
+  "provider": "FCM",
+  "action": "remove"
+}
 ```

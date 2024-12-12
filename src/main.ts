@@ -1,30 +1,36 @@
-import Fastify from 'fastify'
+import { App } from './app.js';
+import { config } from './config/index.js';
+import { server } from './server.js';
+import { queue } from './notification-service/notifications.queue.js';
+import { prisma } from './modules/prisma.js';
+import { logger } from './modules/logger.js';
 
-import { createPrismaClient } from './modules/prisma.js'
-import { createRoutes } from './routes/index.js'
-import { createLogger } from './modules/logger.js'
-import { spawnJobs } from './jobs/index.js'
-import { config } from './config.js'
-import { createAdamantClient } from './modules/adamantClient.js'
-import { createFcmClient } from './modules/fcmClient.js'
-import { FcmNotification } from './adapters/notification/fcmNotification.js'
-import { BaseNotification } from './adapters/notification/baseNotification.js'
+await server.listen({ port: config.app.port });
 
-export const main = async () => {
-  const { logger } = createLogger()
-  const fastify = Fastify({ logger })
-  const prisma = createPrismaClient()
-  const adamantClient = createAdamantClient()
+const app = new App();
+await app.init();
 
-  let notificationService = new BaseNotification()
+export const shutdown = async () => {
+  logger.info('Shutting down gracefully...');
 
-  if (config.app.notificationService === 'FCM') {
-    const fcmClient = createFcmClient()
-    notificationService = new FcmNotification(fcmClient)
+  try {
+    // Stop server and unsubscribe from transactions
+    await server.close();
+    await app.destroy();
+    logger.info('Server stopped');
+
+    // Drain transactions queue
+    await queue.FCM.drain();
+    await queue.APNS.drain();
+    logger.info('Queue drained');
+
+    // Close DB connection
+    await prisma.$disconnect();
+    logger.info('DB connection closed');
+
+    process.exit(0);
+  } catch (err) {
+    logger.error(err, 'Failed to shutdown gracefully');
+    process.exit(1);
   }
-
-  createRoutes(fastify, prisma)
-  await fastify.listen({ port: config.app.port })
-
-  spawnJobs(adamantClient, notificationService, prisma)
-}
+};

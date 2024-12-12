@@ -5,13 +5,18 @@
   "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "start": "tsup --onSuccess 'node dist/index.js'",
-    "dev": "tsup --watch --onSuccess 'node dist/index.js'",
-    "build": "tsup --dts",
+    "start": "tsup --onSuccess 'node -r dotenv/config -r source-map-support/register dist/main.js'",
+    "dev": "tsup --watch --onSuccess 'node -r dotenv/config -r source-map-support/register dist/main.js'",
+    "build": "tsup",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write ./src",
-    "postinstall": "husky install"
+    "format": "prettier --write ./src config*.json5",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "postinstall": "prisma generate",
+    "prepare": "husky"
   },
   "author": "ADAMANT Foundation <devs@adamant.im>",
   "license": "GPL-3.0",
@@ -25,21 +30,24 @@
     "node": ">=20.0.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.3.0",
-    "@commitlint/config-conventional": "^19.2.2",
-    "@eslint/js": "^9.5.0",
+    "@commitlint/cli": "^19.6.0",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@eslint/js": "^9.16.0",
     "@tsconfig/node20": "^20.1.4",
     "@tsconfig/strictest": "^2.0.5",
+    "@types/async": "^3.2.24",
     "@types/eslint__js": "^8.42.3",
     "@types/node": "20.12.7",
     "@types/node-cron": "^3.0.11",
-    "eslint": "^8.57.0",
-    "husky": "^9.0.11",
-    "lint-staged": "^15.2.7",
-    "prettier": "^3.3.2",
-    "tsup": "^8.1.0",
-    "typescript": "^5.4.3",
-    "typescript-eslint": "^7.13.1"
+    "eslint": "^8.57.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.4.2",
+    "source-map-support": "^0.5.21",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^7.18.0",
+    "vitest": "^2.1.8"
   },
   "lint-staged": {
     "*.(ts|js)": [
@@ -48,15 +56,18 @@
     ]
   },
   "dependencies": {
-    "@prisma/client": "^5.16.0",
-    "@types/bignumber.js": "^5.0.0",
+    "@prisma/client": "^5.22.0",
     "adamant-api": "^2.4.0",
     "adamant-module-logger": "github:Adamant-im/adamant-module-logger",
+    "async": "^3.2.6",
     "bignumber.js": "^9.1.2",
-    "fastify": "^4.28.0",
-    "firebase-admin": "^12.2.0",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.1.0",
+    "fastify-type-provider-zod": "^4.0.2",
+    "firebase-admin": "^12.7.0",
     "json5": "^2.2.3",
     "node-cron": "^3.0.3",
-    "prisma": "^5.16.0"
+    "prisma": "^5.22.0",
+    "zod": "^3.23.8"
   }
 }
